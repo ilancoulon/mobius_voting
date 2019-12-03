@@ -8,12 +8,18 @@
 #include <ostream>
 #include "pca.h"
 #include "ICP.h"
+#include "mid_edge_uniformisation.cpp"
+#include "HalfedgeBuilder.cpp"
+
 
 //using namespace Eigen; // to use the classes provided by Eigen library
 MatrixXd V1; // matrix storing vertex coordinates of the input curve
 MatrixXi F1;
 MatrixXd V2; // matrix storing vertex coordinates of the input curve
 MatrixXi F2;
+
+MatrixXd V;
+MatrixXi F;
 
 
 bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier) {
@@ -26,6 +32,21 @@ bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier
     viewer.data(0).set_mesh(V1, F1);
     viewer.data(0).set_colors(Eigen::RowVector3d(0.3, 0.8, 0.3));// update the mesh (both coordinates and faces)
   }
+
+  if (key == '2')
+	{
+		HalfedgeBuilder *builder = new HalfedgeBuilder();
+		HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
+		MidEdge *midedge = new MidEdge(V, F, he);   //
+		midedge->subdivide();	
+
+		// update the current mesh
+		V = midedge->getVertexCoordinates(); // update vertex coordinates
+		F = midedge->getFaces();
+		viewer.data().clear();
+		viewer.data().set_mesh(V, F);
+		return true;
+	}
 
   return false;
 }
@@ -57,6 +78,8 @@ void set_pc(igl::opengl::glfw::Viewer &viewer) {
   viewer.data().add_points(V1,Eigen::RowVector3d(0.3, 0.8, 0.3));
 }
 
+
+/*
 void ex1() {
   igl::readOFF("../data/gargoyle_tri.off", V1, F1);
   igl::readOFF("../data/gargoyle_tri_rotated.off", V2, F2);
@@ -106,9 +129,44 @@ void ex3(){
   viewer.launch();
 }
 
+*/
+
+void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
+{
+	Vertices = MatrixXd(6, 3);
+	Faces = MatrixXi(8, 3);
+
+	Vertices << 0.0, 0.0, 1.0,
+		1.000000, 0.000000, 0.000000,
+		0.000000, 1.000000, 0.000000,
+		-1.000000, 0.000000, 0.000000,
+		0.000000, -1.000000, 0.000000,
+		0.000000, 0.000000, -1.000000;
+
+	Faces << 0, 1, 2,
+		0, 2, 3,
+		0, 3, 4,
+		0, 4, 1,
+		5, 2, 1,
+		5, 3, 2,
+		5, 4, 3,
+		5, 1, 4;
+}
+
+
 int main(int argc, char *argv[])
 {
-  //ex1();
-  //ex2();
-  ex3();
+  igl::readOFF("../data/gargoyle_tri.off",V,F);
+
+  igl::opengl::glfw::Viewer viewer; // create the 3d viewer
+	std::cout << "Press '1' for one round sphere generation" << std::endl
+			  << "Press '2' for one round Loop subdivision" << std::endl
+			  << "Press 'S' save the current mesh to file" << std::endl;
+
+	viewer.callback_key_down = &key_down;
+	viewer.data().set_mesh(V, F);
+
+	viewer.core(0).align_camera_center(V, F);
+	viewer.launch(); // run the viewer
+
 }
