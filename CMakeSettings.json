@@ -15,6 +15,11 @@
                     "name": "USE_MSVC_RUNTIME_LIBRARY_DLL",
                     "value": "False",
                     "type": "BOOL"
+                },
+                {
+                    "name": "CMAKE_INSTALL_PREFIX",
+                    "value": "C:/Users/ilanc/Documents/INF574/mobius_voting/out/install/x64-Debug",
+                    "type": "PATH"
                 }
             ]
         }
