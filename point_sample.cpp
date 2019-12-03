@@ -30,3 +30,10 @@ void gaussian_curv()
 	viewer.data().set_colors(C);
 	viewer.launch();
 }
+
+void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F) {
+	HalfedgeBuilder* builder = new HalfedgeBuilder();
+	HalfedgeDS he = builder->createMeshWithFaces(V.rows(), F);
+
+
+}

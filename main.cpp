@@ -10,6 +10,7 @@
 #include "ICP.h"
 #include "mid_edge_uniformisation.cpp"
 #include "HalfedgeBuilder.cpp"
+#include "point_sample.h"
 
 
 //using namespace Eigen; // to use the classes provided by Eigen library
@@ -81,16 +82,16 @@ void set_pc(igl::opengl::glfw::Viewer &viewer) {
 
 /*
 void ex1() {
-  igl::readOFF("../data/gargoyle_tri.off", V1, F1);
-  igl::readOFF("../data/gargoyle_tri_rotated.off", V2, F2);
+  igl::readOFF("../../../data/gargoyle_tri.off", V1, F1);
+  igl::readOFF("../../../data/gargoyle_tri_rotated.off", V2, F2);
   igl::opengl::glfw::Viewer viewer;
   set_meshes(viewer);
   viewer.launch();
 }
 
 void ex2() {
-  igl::readOFF("../data/egea.off", V1, F1);
-  igl::readOFF("../data/egea_rotated.off", V2, F2);
+  igl::readOFF("../../../data/egea.off", V1, F1);
+  igl::readOFF("../../../data/egea_rotated.off", V2, F2);
   igl::opengl::glfw::Viewer viewer;
   set_meshes(viewer);
     viewer.core().is_animating = true;
@@ -116,7 +117,7 @@ void ex2() {
 }
 
 void ex3(){
-  igl::readOFF("../data/sphere.off", V1, F1);
+  igl::readOFF("../../../data/sphere.off", V1, F1);
   igl::opengl::glfw::Viewer viewer;
   set_pc(viewer);
   Eigen::MatrixXi I;
@@ -156,17 +157,7 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 
 int main(int argc, char *argv[])
 {
-  igl::readOFF("../data/gargoyle_tri.off",V,F);
-
-  igl::opengl::glfw::Viewer viewer; // create the 3d viewer
-	std::cout << "Press '1' for one round sphere generation" << std::endl
-			  << "Press '2' for one round Loop subdivision" << std::endl
-			  << "Press 'S' save the current mesh to file" << std::endl;
-
-	viewer.callback_key_down = &key_down;
-	viewer.data().set_mesh(V, F);
-
-	viewer.core(0).align_camera_center(V, F);
-	viewer.launch(); // run the viewer
-
+  //ex1();
+  //ex2();
+  ex3();
 }

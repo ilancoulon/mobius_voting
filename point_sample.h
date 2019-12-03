@@ -11,5 +11,7 @@ using namespace Eigen;
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/jet.h>
 
+#include "HalfedgeBuilder.cpp"
+
 
 void gaussian_curv();
