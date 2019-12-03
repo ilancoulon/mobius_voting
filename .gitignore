@@ -26,7 +26,12 @@
 *.a
 *.lib
 
+#vs
+.vs
+
 # Executables
 *.exe
 *.out
 *.app
+
+out/*
