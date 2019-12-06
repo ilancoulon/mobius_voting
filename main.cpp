@@ -10,7 +10,7 @@
 #include "ICP.h"
 #include "mid_edge_uniformisation.cpp"
 #include "HalfedgeBuilder.cpp"
-#include "point_sample.h"
+#include "planar_embedding.cpp"
 
 
 //using namespace Eigen; // to use the classes provided by Eigen library
@@ -21,6 +21,14 @@ MatrixXi F2;
 
 MatrixXd V;
 MatrixXi F;
+
+VectorXd u;
+VectorXd u_star;
+
+MatrixXd Vmid;
+MatrixXi Fmid;
+
+int* halfpoints;
 
 
 bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier) {
@@ -34,6 +42,7 @@ bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier
     viewer.data(0).set_colors(Eigen::RowVector3d(0.3, 0.8, 0.3));// update the mesh (both coordinates and faces)
   }
 
+  
   if (key == '2')
 	{
 		HalfedgeBuilder *builder = new HalfedgeBuilder();
@@ -48,6 +57,38 @@ bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier
 		viewer.data().set_mesh(V, F);
 		return true;
 	}
+  
+ 
+  if (key == '3')
+	{
+		HalfedgeBuilder *builder = new HalfedgeBuilder();
+		HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
+		MidEdge *midedge = new MidEdge(V, F, he);   
+		midedge->subdivide();	
+
+		Vmid = midedge->getVertexCoordinates();
+		Fmid = midedge->getFaces();
+    halfpoints = midedge->getHalfPoints();
+
+    HalfedgeBuilder *builder2 = new HalfedgeBuilder();
+		HalfedgeDS hemid = (builder2->createMeshWithFaces(Vmid.rows(), Fmid));
+
+    PlanarEmbedding *planar = new PlanarEmbedding(V,F,he,Vmid,Fmid,hemid,halfpoints);
+
+    u = planar -> u();
+    u_star = planar -> u_star(u);
+
+    planar -> embedding(u,u_star);
+
+    V = planar->getVertexCoordinates(); // update vertex coordinates
+		F = planar->getFaces();
+
+		viewer.data().clear();
+		viewer.data().set_mesh(V, F);
+		return true;
+	}
+
+  
 
   return false;
 }
@@ -157,7 +198,21 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 
 int main(int argc, char *argv[])
 {
-  //ex1();
-  //ex2();
-  ex3();
+
+
+	igl::readOFF("../data/bunny.off", V, F);
+
+	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
+	std::cout << "Press '1' for one round sphere generation" << std::endl
+			  << "Press '2' for one round Loop subdivision" << std::endl
+			  << "Press 'S' save the current mesh to file" << std::endl;
+
+	viewer.callback_key_down = &key_down;
+	viewer.data().set_mesh(V, F);
+
+	viewer.core(0).align_camera_center(V, F);
+	viewer.launch(); // run the viewer
+
+
+
 }

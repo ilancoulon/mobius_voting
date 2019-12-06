@@ -29,6 +29,7 @@ public:
 
 		V1 = new MatrixXd(nVertices, 3);
 		F1 = new MatrixXi(nFaces, 3);
+        halfpoints = new int[2*e];
     }
 
     void subdivide()
@@ -39,33 +40,32 @@ public:
         int F = he->sizeOfFaces();         // number of vertices in the original mesh
 
 
-        int *halfedges = new int[2 * e];
         for (int i = 0; i < 2 * e; i++)
-            halfedges[i] = -1;
+            halfpoints[i] = -1;
 
-        int id_edge = 0;
+        int id_point = 0;
 
         std::cout << e << std::endl;
 
         for (int i = 0; i < 2 * e; i++)
         {
-            if (halfedges[i] == -1)
+            if (halfpoints[i] == -1)
             {
-                halfedges[i] = id_edge;
-                halfedges[he->getOpposite(i)] = id_edge;
-                V1->row(id_edge) = computeEdgePoint(i);
-                id_edge++;
+                halfpoints[i] = id_point;
+                halfpoints[he->getOpposite(i)] = id_point;
+                V1->row(id_point) = computeEdgePoint(i);
+                id_point++;
             }
         }
 
         for (int i = 0; i < F; i++)
         {
 
-            int e0 = halfedges[he->getEdgeInFace(i)];
-            int e1 = halfedges[he->getNext(he->getEdgeInFace(i))];
-            int e2 = halfedges[he->getNext(he->getNext(he->getEdgeInFace(i)))];
+            int v0 = halfpoints[he->getEdgeInFace(i)];
+            int v1 = halfpoints[he->getNext(he->getEdgeInFace(i))];
+            int v2 = halfpoints[he->getNext(he->getNext(he->getEdgeInFace(i)))];
 
-            F1->row(i) << e0, e1, e2;
+            F1->row(i) << v0, v1, v2;
         }
     }
 
@@ -83,6 +83,11 @@ public:
     MatrixXi getFaces()
     {
         return *F1;
+    }
+
+    int* getHalfPoints()
+    {
+        return halfpoints;
     }
 
 private:
@@ -121,6 +126,7 @@ private:
     MatrixXi *F; 
 
     int nVertices, nFaces; 
+    int *halfpoints;
     MatrixXd *V1;          
     MatrixXi *F1;         
 };
