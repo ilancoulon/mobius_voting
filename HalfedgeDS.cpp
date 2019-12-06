@@ -108,7 +108,7 @@ public:
 	/** 
 	 * Set the half-edge 'e' incident to the given face 'f'
 	 **/
-	int setEdgeInFace(int f, int e)
+	void setEdgeInFace(int f, int e)
 	{
 		faces[f]=e;
 	}
