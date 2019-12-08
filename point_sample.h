@@ -1,7 +1,9 @@
+#pragma once
+
 #include <Eigen/Core>
 #include <Eigen/SVD>
 #include <Eigen/Eigenvalues>
-#pragma once
+
 
 using namespace Eigen;
 #include <igl/octree.h>

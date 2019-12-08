@@ -1,3 +1,5 @@
+#pragma once
+
 #include <igl/opengl/glfw/Viewer.h>
 
 #ifndef HALFEDGE_DS_HEADER

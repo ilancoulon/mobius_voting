@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef HALFEDGE_DS_HEADER
 #define HALFEDGE_DS_HEADER
 #include "HalfedgeDS.cpp"
@@ -6,9 +8,7 @@
 using namespace Eigen;
 using namespace std;
 
-double cot(Vector3d v, Vector3d w) { 
-    return( v.dot(w) / (v.cross(w).norm()) ); 
-};
+
 
 class PlanarEmbedding
 {
@@ -41,6 +41,10 @@ public:
         Vplain = new MatrixXd(nVerticesmid,V->cols());
 
     }
+
+	double cot(Vector3d v, Vector3d w) {
+		return(v.dot(w) / (v.cross(w).norm()));
+	}
 
     
 
@@ -322,12 +326,12 @@ public:
         ColPivHouseholderQR<MatrixXd> dec(System);
         u_star = dec.solve(rightMember);
 
-        std::cout << System << std::endl << std::endl;
+        /*std::cout << System << std::endl << std::endl;
 
         std::cout << System.determinant() << std::endl << std::endl;
         std::cout << u_star << std::endl << std::endl;
 
-        std::cout << rightMember << std::endl;
+        std::cout << rightMember << std::endl;*/
 
         return u_star;
         
@@ -353,26 +357,33 @@ public:
             int v2 = he->getTarget(he->getOpposite(index));
 
         
-            Vplain->row(v) << 0.5 * u(v1) + 0.5 * u(v2),u_star(v),0.;
+            Vplain->row(v) << (0.5 * u(v1) + 0.5 * u(v2))*0.1, u_star(v)*0.1, 0.;
 
         }
 
-        Fmid->row(0) << Fmid->row(1);
+        Fmid->row(0) = Fmid->row(1);
 
-        std::cout << *Vplain << std::endl;
-        std::cout << *Fmid << std::endl;
+        /*std::cout << *Vplain << std::endl;
+        std::cout << *Fmid << std::endl;*/
         
 
     }
 
     MatrixXd getVertexCoordinates()
     {
-        return *Vplain;
+		//std::cout << "Vertices :" << *Vplain << std::endl;
+		return *Vplain;
     }
 
     MatrixXi getFaces()
     {
-        return *Fmid;
+		MatrixXi testF = MatrixXi::Zero(Fmid->rows() - 1, 3);
+		for (size_t i = 1; i < Fmid->rows(); i++)
+		{
+			testF.row(i - 1) = Fmid->row(i);
+		}
+		//std::cout << "Faces :" << testF << std::endl;
+        return testF;
     }
 
 private:
