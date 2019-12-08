@@ -151,7 +151,6 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 
 MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon) {
 
-
 	VectorXcd planarPoints1;
 	VectorXcd planarPoints2;
 
@@ -181,11 +180,12 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXd u_star1;
 
 	u1 = planar1->u();
-	u_star1 = planar1->u_star(u);
+	u_star1 = planar1->u_star(u1);
 
 	planar1->embedding(u1, u_star1);
 
 	planarPoints1 = planar1->getComplexCoordinates();
+
 
 
     /////////////////////////////////////////////////
@@ -214,7 +214,7 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXd u_star2;
 
 	u2 = planar2->u();
-	u_star2 = planar2->u_star(u);
+	u_star2 = planar2->u_star(u2);
 
 	planar2->embedding(u2, u_star2);
 
@@ -227,18 +227,22 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXi sampled1;
 	VectorXi sampled2;
 
-	fpsSampling(V1,F1,sampled1);
-	fpsSampling(V2,F2,sampled2);
+
+	//TO DO : DO THE SAMPLING
+
 
 	VectorXcd sigma1; //Contains the indexes of sample points in Mid-Edge Mesh 1
 	VectorXcd sigma2; //Contains the indexes of sample points in Mid-Edge Mesh 2
 
+
 	//TO DO : MATCH SAMPLE POINTS of "sampled1" and "sample2" WITH THEIR CLOSEST VERTEX IN THE CORRESPONDING MID-EDGE MESH
 	//ADD THE PLANAR EMBEDDING OF THOSE NEW POINTS IN "sigma1" and "sigma2"
+
 
 	int nbSampled = sigma1.rows();
 
 	MatrixXd C = MatrixXd::Zero(nbSampled,nbSampled);
+
 
 
 	///////////////////////////////////////////////
@@ -311,6 +315,13 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 int main(int argc, char *argv[])
 {
+
+	igl::readOFF("../data/star.off", V1, F1);
+	igl::readOFF("../data/star_rotated.off", V2, F2);
+
+	MatrixXd C = mobius_voting(V1,F1,V2,F2,0,0,0.1);
+
+	std::cout << C << std::endl;
 
 	igl::readOFF("../data/star.off", V, F);
 

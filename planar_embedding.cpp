@@ -278,7 +278,7 @@ public:
 
     MatrixXd getVertexCoordinates()
     {
-        std::cout << "Vertices :" << *Vplain << std::endl;
+        //std::cout << "Vertices :" << *Vplain << std::endl;
         return *Vplain;
     }
 
