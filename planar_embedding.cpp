@@ -8,54 +8,49 @@
 using namespace Eigen;
 using namespace std;
 
-
-
 class PlanarEmbedding
 {
 
 public:
-
-
-    PlanarEmbedding(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh, MatrixXd &Vmid_original, MatrixXi &Fmid_original, HalfedgeDS &meshmid, int* _halfpoints)
+    PlanarEmbedding(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh, MatrixXd &Vmid_original, MatrixXi &Fmid_original, HalfedgeDS &meshmid, int *_halfpoints)
     {
         he = &mesh;
         V = &V_original;
         F = &F_original;
-        hemid = &meshmid;      
+        hemid = &meshmid;
         Vmid = &Vmid_original;
-        Fmid = &Fmid_original;      
-        int e = he->sizeOfHalfedges() / 2; 
+        Fmid = &Fmid_original;
+        int e = he->sizeOfHalfedges() / 2;
         int n = V_original.rows();
 
         halfpoints = _halfpoints;
 
-        int emid = hemid->sizeOfHalfedges() / 2; 
-        int nmid = Vmid_original.rows();          
+        int emid = hemid->sizeOfHalfedges() / 2;
+        int nmid = Vmid_original.rows();
 
         nVertices = n;
-		nFaces = F->rows();
+        nFaces = F->rows();
 
         nVerticesmid = nmid;
-		nFacesmid = Fmid->rows();
+        nFacesmid = Fmid->rows();
 
-        Vplain = new MatrixXd(nVerticesmid,V->cols());
-
+        Vplain = new MatrixXd(nVerticesmid, V->cols());
     }
 
-	double cot(Vector3d v, Vector3d w) {
-		return(v.dot(w) / (v.cross(w).norm()));
-	}
-
-    
+    double cot(Vector3d v, Vector3d w)
+    {
+        return (v.dot(w) / (v.cross(w).norm()));
+    }
 
     VectorXd u()
     {
 
-        MatrixXd System = MatrixXd::Zero(nVertices,nVertices);
+        MatrixXd System = MatrixXd::Zero(nVertices, nVertices);
         VectorXd u = VectorXd::Zero(nVertices);
-        VectorXd rightMember = VectorXd::Zero(nVertices); 
+        VectorXd rightMember = VectorXd::Zero(nVertices);
 
-        for (int v=0; v < nVertices; v++) {
+        for (int v = 0; v < nVertices; v++)
+        {
 
             int e = he->getEdge(v);
             int e0 = e;
@@ -74,20 +69,19 @@ public:
             Vector3d vec1b = V->row(v) - V->row(v0);
             Vector3d vec2a = V->row(v1) - V->row(v2);
             Vector3d vec2b = V->row(v) - V->row(v2);
-            
 
             //std::cout << vec0 << std::endl;
             //std::cout << vec1 << std::endl;
             //std::cout << vec2 << std::endl;
 
-            double cota = cot(vec1a,vec1b);
-            double cotb = cot(vec2a,vec2b);
+            double cota = cot(vec1a, vec1b);
+            double cotb = cot(vec2a, vec2b);
 
             //std::cout << cota << std::endl;
             //std::cout << cotb << std::endl;
 
-            System(v,v) = System(v,v)+ cota + cotb;
-            System(v,v1) = System(v,v1) - cota - cotb;
+            System(v, v) = System(v, v) + cota + cotb;
+            System(v, v1) = System(v, v1) - cota - cotb;
 
             int currentEdge = he->getOpposite(he->getNext(e));
 
@@ -110,36 +104,36 @@ public:
                 vec1b = V->row(v) - V->row(v0);
                 vec2a = V->row(v1) - V->row(v2);
                 vec2b = V->row(v) - V->row(v2);
-                
 
                 //std::cout << vec0 << std::endl;
                 //std::cout << vec1 << std::endl;
                 //std::cout << vec2 << std::endl;
 
-                cota = cot(vec1a,vec1b);
-                cotb = cot(vec2a,vec2b);
+                cota = cot(vec1a, vec1b);
+                cotb = cot(vec2a, vec2b);
 
                 //std::cout << cota << std::endl;
                 //std::cout << cotb << std::endl;
 
-                System(v,v) = System(v,v)+ cota + cotb;
-                System(v,v1) = System(v,v1) - cota - cotb;
+                System(v, v) = System(v, v) + cota + cotb;
+                System(v, v1) = System(v, v1) - cota - cotb;
 
                 currentEdge = he->getOpposite(he->getNext(currentEdge));
-            }   
+            }
         }
 
-        int vic = (*F)(0,0);
-        int vjc = (*F)(0,1);
+        int vic = (*F)(0, 0);
+        int vjc = (*F)(0, 1);
 
-        for (int v=0; v < nVertices; v++) {
+        for (int v = 0; v < nVertices; v++)
+        {
 
-            System(vic,v) = 0;
-            System(vjc,v) = 0;
+            System(vic, v) = 0;
+            System(vjc, v) = 0;
         }
 
-        System(vic,vic) = 1;
-        System(vjc,vjc) = 1;
+        System(vic, vic) = 1;
+        System(vjc, vjc) = 1;
 
         rightMember(vic) = -1;
         rightMember(vjc) = 1;
@@ -147,208 +141,112 @@ public:
         ColPivHouseholderQR<MatrixXd> dec(System);
         u = dec.solve(rightMember);
 
-        //std::cout << System << std::endl;
-        //std::cout << System.determinant() << std::endl << std::endl;
-        //std::cout << u << std::endl;
-        //std::cout << rightMember << std::endl;
-
         return u;
-
     }
 
     VectorXd u_star(VectorXd u)
     {
 
-        MatrixXd System = MatrixXd::Zero(nVerticesmid,nVerticesmid);
+        MatrixXd System = MatrixXd::Zero(nVerticesmid, nVerticesmid);
         VectorXd u_star = VectorXd::Zero(nVerticesmid);
-        VectorXd rightMember = VectorXd::Zero(nVerticesmid); 
+        VectorXd rightMember = VectorXd::Zero(nVerticesmid);
 
-
-        System(0,0) = 1;
+        System(0, 0) = 1;
         rightMember(0) = 0;
 
         bool *alreadyDone;
         alreadyDone = new bool[nVerticesmid];
 
-        for (int i = 0; i < nVerticesmid; i++) {
+        for (int i = 0; i < nVerticesmid; i++)
+        {
 
             alreadyDone[i] = false;
         }
 
         alreadyDone[0] = true;
 
+        for (int f = 0; f < nFaces; f++)
+        {
 
-        /*
+            if (f == 0)
+                continue;
 
-        for (int he0 = 0; he0 < 2 * nVerticesmid; he0++) {
+            int e = he->getEdgeInFace(f);
 
-            if (alreadyDone[halfpoints[he0]] == false) {
-            
-            int he1 = he->getNext(he0);
-            int he2 = he->getNext(he1);
+            for (int i = 0; i < 3; i++)
+            {
 
-            int vr = halfpoints[he1]; 
-            int vs = halfpoints[he2]; 
+                int he0 = e;
+                int he1 = he->getNext(he0);
+                int he2 = he->getNext(he1);
 
-            int vi = he->getTarget(he0);
-            int vj = he->getTarget(he1);
-            int vk = he->getTarget(he2);
+                int vi = he->getTarget(he0);
+                int vj = he->getTarget(he1);
+                int vk = he->getTarget(he2);
 
-            Vector3d vik = V->row(vk) - V->row(vi);
-            Vector3d vij = V->row(vj) - V->row(vi);
+                int vr = halfpoints[he1];
 
-            Vector3d vki = V->row(vi) - V->row(vk);
-            Vector3d vkj = V->row(vj) - V->row(vk);
+                if (true)
+                {
 
-            double coti = cot(vik,vij);
-            double cotk = cot(vki,vkj);
+                    int vs = halfpoints[he2];
 
-            double ui = u(vi);
-            double uj = u(vj);
-            double uk = u(vk);
+                    Vector3d vik = V->row(vk) - V->row(vi);
+                    Vector3d vij = V->row(vj) - V->row(vi);
 
-            System(halfpoints[he0],vr) = 1 ;
-            System(halfpoints[he0],vs) = -1 ;
+                    Vector3d vki = V->row(vi) - V->row(vk);
+                    Vector3d vkj = V->row(vj) - V->row(vk);
 
-            rightMember(halfpoints[he0]) = 0.5 * ((ui-uj)*cotk + (uk-uj)*coti);
+                    double coti = cot(vik, vij);
+                    double cotk = cot(vki, vkj);
 
-            alreadyDone[halfpoints[he0]] = true;
+                    double ui = u(vi);
+                    double uj = u(vj);
+                    double uk = u(vk);
 
+                    System(vr, vr) += 1;
+                    System(vr, vs) += -1;
+
+                    rightMember(vr) += 0.5 * ((ui - uj) * cotk + (uk - uj) * coti);
+
+                    alreadyDone[vr] = true;
+                }
+
+                e = he->getNext(e);
             }
-
         }
 
-        */
+        for (int i = 0; i < nVerticesmid; i++)
+        {
 
-       /*
-
-       for (int vr = 1; vr < nVerticesmid; vr++) {
-            
-            int he0;
-
-            for(int e = 0; e<2  * nVerticesmid; e++) {
-
-                if (halfpoints[e] == vr) {he0 = e; break;}
-
-            }
-
-            int he1 = he-> getNext(he0);
-            int he2 = he-> getNext(he1);
-
-            int vi = he->getTarget(he0);
-            int vj = he->getTarget(he1);
-            int vk = he->getTarget(he2);
-
-            int vs = halfpoints[he1];
-
-            Vector3d vik = V->row(vk) - V->row(vi);
-            Vector3d vij = V->row(vj) - V->row(vi);
-
-            Vector3d vki = V->row(vi) - V->row(vk);
-            Vector3d vkj = V->row(vj) - V->row(vk);
-
-            double coti = cot(vik,vij);
-            double cotk = cot(vki,vkj);
-
-            double ui = u(vi);
-            double uj = u(vj);
-            double uk = u(vk);
-
-            System(vr,vr) = 1 ;
-            System(vr,vs) = -1 ;
-
-            rightMember(vr) = 0.5 * ((ui-uj)*cotk + (uk-uj)*coti);
-
-       } */
-
-       for(int f = 0; f < nFaces; f++) {
-
-           if (f==0) continue;
-
-
-           int e = he->getEdgeInFace(f);
-
-           for(int i = 0; i<3; i++) {
-           
-           int he0 = e;
-           int he1 = he->getNext(he0);
-           int he2 = he->getNext(he1);
-
-           int vi = he->getTarget(he0);
-           int vj = he->getTarget(he1);
-           int vk = he->getTarget(he2);
-
-           int vr = halfpoints[he1];
-
-            if (true) {
-
-           int vs = halfpoints[he2];
-
-            Vector3d vik = V->row(vk) - V->row(vi);
-            Vector3d vij = V->row(vj) - V->row(vi);
-
-            Vector3d vki = V->row(vi) - V->row(vk);
-            Vector3d vkj = V->row(vj) - V->row(vk);
-
-
-            double coti = cot(vik,vij);
-            double cotk = cot(vki,vkj);
-
-            double ui = u(vi);
-            double uj = u(vj);
-            double uk = u(vk);
-
-
-            System(vr,vr) += 1 ;
-            System(vr,vs) += -1 ;
-
-            rightMember(vr) += 0.5 * ((ui-uj)*cotk + (uk-uj)*coti);
-
-            alreadyDone[vr] = true;
-
-            }
-
-            e = he-> getNext(e);
-
-           }
-
-       }
-
-        for(int i = 0; i < nVerticesmid; i++) {
-
-            System(0,i) = 0;
+            System(0, i) = 0;
         }
 
-       System(0,0) = 1;
+        System(0, 0) = 1;
         rightMember(0) = 0;
-        
 
         ColPivHouseholderQR<MatrixXd> dec(System);
         u_star = dec.solve(rightMember);
 
-        /*std::cout << System << std::endl << std::endl;
-
-        std::cout << System.determinant() << std::endl << std::endl;
-        std::cout << u_star << std::endl << std::endl;
-
-        std::cout << rightMember << std::endl;*/
-
         return u_star;
-        
     }
 
+    void embedding(VectorXd u, VectorXd u_star)
+    {
 
-    void embedding(VectorXd u,VectorXd u_star) {
-        
-
-        for (int v = 0; v < nVerticesmid; v++) {
+        for (int v = 0; v < nVerticesmid; v++)
+        {
 
             int index = 0;
 
-            for(int e = 0; e<2  * nVerticesmid; e++) {
+            for (int e = 0; e < 2 * nVerticesmid; e++)
+            {
 
-                if (halfpoints[e] == v) {index = e; break;}
-
+                if (halfpoints[e] == v)
+                {
+                    index = e;
+                    break;
+                }
             }
 
             //std::cout << v << std::endl;
@@ -356,38 +254,46 @@ public:
             int v1 = he->getTarget(index);
             int v2 = he->getTarget(he->getOpposite(index));
 
-        
-            Vplain->row(v) << (0.5 * u(v1) + 0.5 * u(v2))*0.1, u_star(v)*0.1, 0.;
-
+            Vplain->row(v) << (0.5 * u(v1) + 0.5 * u(v2)) * 0.1, u_star(v) * 0.1, 0.;
         }
 
         Fmid->row(0) = Fmid->row(1);
 
         /*std::cout << *Vplain << std::endl;
         std::cout << *Fmid << std::endl;*/
-        
+    }
 
+    VectorXcd getComplexCoordinates() {
+
+        VectorXcd res = VectorXcd::Zero(Vplain->rows());
+
+        for(int v = 0; v < Vplain->rows(); v++) {
+
+            std::complex<double> point ((*Vplain)(v,0),(*Vplain)(v,1));
+            res(v) = point;
+
+        }
+        return res;
     }
 
     MatrixXd getVertexCoordinates()
     {
-		//std::cout << "Vertices :" << *Vplain << std::endl;
-		return *Vplain;
+        std::cout << "Vertices :" << *Vplain << std::endl;
+        return *Vplain;
     }
 
     MatrixXi getFaces()
     {
-		MatrixXi testF = MatrixXi::Zero(Fmid->rows() - 1, 3);
-		for (size_t i = 1; i < Fmid->rows(); i++)
-		{
-			testF.row(i - 1) = Fmid->row(i);
-		}
-		//std::cout << "Faces :" << testF << std::endl;
+        MatrixXi testF = MatrixXi::Zero(Fmid->rows() - 1, 3);
+        for (size_t i = 1; i < Fmid->rows(); i++)
+        {
+            testF.row(i - 1) = Fmid->row(i);
+        }
+        //std::cout << "Faces :" << testF << std::endl;
         return testF;
     }
 
 private:
-
     int vertexDegree(int v)
     {
         int result = 0;
@@ -403,15 +309,15 @@ private:
 
     HalfedgeDS *he;
     MatrixXd *V;
-    MatrixXi *F; 
+    MatrixXi *F;
 
     HalfedgeDS *hemid;
     MatrixXd *Vmid;
-    MatrixXi *Fmid; 
+    MatrixXi *Fmid;
 
-    int nVertices, nFaces; 
-    int nVerticesmid, nFacesmid; 
-    int* halfpoints;
+    int nVertices, nFaces;
+    int nVerticesmid, nFacesmid;
+    int *halfpoints;
 
-    MatrixXd *Vplain;       
+    MatrixXd *Vplain;
 };
