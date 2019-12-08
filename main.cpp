@@ -148,6 +148,167 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 		5, 1, 4;
 }
 
+
+MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon) {
+
+
+	VectorXcd planarPoints1;
+	VectorXcd planarPoints2;
+
+    ////////////////////////////////////////////////
+	///////// Planar Embedding for Shape 1 /////////
+    ////////////////////////////////////////////////
+
+	HalfedgeBuilder *builder1 = new HalfedgeBuilder();
+	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1)); // create the half-edge representation
+	MidEdge *midedge1 = new MidEdge(V1, F1, he1);
+	midedge1->subdivide();
+
+	MatrixXd Vmid1;
+	MatrixXi Fmid1;
+	int *halfpoints1;
+
+	Vmid1 = midedge1->getVertexCoordinates();
+	Fmid1 = midedge1->getFaces();
+	halfpoints1 = midedge1->getHalfPoints();
+
+	HalfedgeBuilder *buildermid1 = new HalfedgeBuilder();
+	HalfedgeDS hemid1 = (buildermid1->createMeshWithFaces(Vmid1.rows(), Fmid1));
+
+	PlanarEmbedding *planar1 = new PlanarEmbedding(V1, F1, he1, Vmid1, Fmid1, hemid1, halfpoints1);
+
+	VectorXd u1;
+	VectorXd u_star1;
+
+	u1 = planar1->u();
+	u_star1 = planar1->u_star(u);
+
+	planar1->embedding(u1, u_star1);
+
+	planarPoints1 = planar1->getComplexCoordinates();
+
+
+    /////////////////////////////////////////////////
+	///////// Planar Embedding for Shape 2 //////////
+    /////////////////////////////////////////////////
+
+	HalfedgeBuilder *builder2 = new HalfedgeBuilder();
+	HalfedgeDS he2 = (builder2->createMeshWithFaces(V2.rows(), F2)); // create the half-edge representation
+	MidEdge *midedge2 = new MidEdge(V2, F2, he2);
+	midedge2->subdivide();
+
+	MatrixXd Vmid2;
+	MatrixXi Fmid2;
+	int *halfpoints2;
+
+	Vmid2 = midedge2->getVertexCoordinates();
+	Fmid2 = midedge2->getFaces();
+	halfpoints2 = midedge2->getHalfPoints();
+
+	HalfedgeBuilder *buildermid2 = new HalfedgeBuilder();
+	HalfedgeDS hemid2 = (buildermid2->createMeshWithFaces(Vmid2.rows(), Fmid2));
+
+	PlanarEmbedding *planar2 = new PlanarEmbedding(V2, F2, he2, Vmid2, Fmid2, hemid2, halfpoints2);
+
+	VectorXd u2;
+	VectorXd u_star2;
+
+	u2 = planar2->u();
+	u_star2 = planar2->u_star(u);
+
+	planar2->embedding(u2, u_star2);
+
+	planarPoints2 = planar2->getComplexCoordinates();
+
+    //////////////////////////////////////////////
+	//////////// TAKE SAMPLE POINTS //////////////
+	//////////////////////////////////////////////
+
+	VectorXi sampled1;
+	VectorXi sampled2;
+
+	fpsSampling(V1,F1,sampled1);
+	fpsSampling(V2,F2,sampled2);
+
+	VectorXcd sigma1; //Contains the indexes of sample points in Mid-Edge Mesh 1
+	VectorXcd sigma2; //Contains the indexes of sample points in Mid-Edge Mesh 2
+
+	//TO DO : MATCH SAMPLE POINTS of "sampled1" and "sample2" WITH THEIR CLOSEST VERTEX IN THE CORRESPONDING MID-EDGE MESH
+	//ADD THE PLANAR EMBEDDING OF THOSE NEW POINTS IN "sigma1" and "sigma2"
+
+	int nbSampled = sigma1.rows();
+
+	MatrixXd C = MatrixXd::Zero(nbSampled,nbSampled);
+
+
+	///////////////////////////////////////////////
+	////////   MOBIUS VOTING ALGORITHM  ///////////
+	///////////////////////////////////////////////
+	
+	for (int i = 0; i < I; i++) {
+
+		//Pick 3 random points in both meshes
+
+		int i1;  
+		int j1;
+		int k1;
+		int i2;  
+		int j2;
+		int k2;
+
+		i1 = rand() % nbSampled;
+		do {
+			j1 = rand() % nbSampled;
+		} while (j1 == i1);
+		do {
+			k1 = rand() % nbSampled;
+		} while (k1 == j1 || k1 == i1);
+
+		i2 = rand() % nbSampled;
+		do {
+			j2 = rand() % nbSampled;
+		} while (j2 == i2);
+		do {
+			k2 = rand() % nbSampled;
+		} while (k2 == j2 || k2 == i2);
+
+		//Compute Möbius Transformation
+
+		Mobius *mobius1 = new Mobius(sigma1,i1,j1,k1);
+		Mobius *mobius2 = new Mobius(sigma1,i1,j1,k1);
+
+		VectorXcd planarPointsAfterMobius1;
+		VectorXcd planarPointsAfterMobius2;
+
+		planarPointsAfterMobius1 = mobius1->getNewCoordinates();
+		planarPointsAfterMobius2 = mobius2->getNewCoordinates();
+
+
+		//TO-DO : FIND MUTUALLY CLOSEST NEIGHBORS AND FILL THEM IN "neigh1", "neigh2"
+
+		VectorXi neigh1;
+		VectorXi neigh2;
+		int n = neigh1.rows();
+
+		if (n > K) {
+
+			double energy;
+			//TO-DO : CALCULATE THE ENERGY
+
+			for (int neigh = 0; neigh < n; neigh++) {
+
+				int k = neigh1(neigh);
+				int l = neigh2(neigh);
+
+				C(k,l) += 1 / (epsilon + energy/(double)n);
+			}
+		}
+	}
+
+	return C;
+
+}
+
 int main(int argc, char *argv[])
 {
 
