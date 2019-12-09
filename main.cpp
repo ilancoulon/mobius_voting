@@ -6,6 +6,7 @@
 #include <igl/writeOBJ.h>
 #include <iostream>
 #include <ostream>
+#include <list>
 
 #include "point_sample.h"
 
@@ -80,12 +81,11 @@ bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier
 
 		//std::cout << planarPoints << std::endl << std::endl;
 
-		Mobius *mobius = new Mobius(planarPoints,0,1,2);
+		Mobius *mobius = new Mobius(planarPoints, 0, 1, 2);
 
 		planarPointsAfterMobius = mobius->getNewCoordinates();
 
 		//std::cout << planarPointsAfterMobius << std::endl << std::endl;
-
 
 		viewer.data().clear();
 		viewer.data().set_mesh(V, F);
@@ -148,15 +148,15 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 		5, 1, 4;
 }
 
-
-MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon) {
+MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon)
+{
 
 	VectorXcd planarPoints1;
 	VectorXcd planarPoints2;
 
-    ////////////////////////////////////////////////
+	////////////////////////////////////////////////
 	///////// Planar Embedding for Shape 1 /////////
-    ////////////////////////////////////////////////
+	////////////////////////////////////////////////
 
 	HalfedgeBuilder *builder1 = new HalfedgeBuilder();
 	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1)); // create the half-edge representation
@@ -186,11 +186,9 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	planarPoints1 = planar1->getComplexCoordinates();
 
-
-
-    /////////////////////////////////////////////////
+	/////////////////////////////////////////////////
 	///////// Planar Embedding for Shape 2 //////////
-    /////////////////////////////////////////////////
+	/////////////////////////////////////////////////
 
 	HalfedgeBuilder *builder2 = new HalfedgeBuilder();
 	HalfedgeDS he2 = (builder2->createMeshWithFaces(V2.rows(), F2)); // create the half-edge representation
@@ -220,66 +218,83 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	planarPoints2 = planar2->getComplexCoordinates();
 
-    //////////////////////////////////////////////
+	//////////////////////////////////////////////
 	//////////// TAKE SAMPLE POINTS //////////////
 	//////////////////////////////////////////////
 
-	VectorXi sampled1;
-	VectorXi sampled2;
-
+	VectorXi sampled1 = gaussian_curv(V1, F1);
+	VectorXi sampled2 = gaussian_curv(V2, F2);
 
 	//TO DO : DO THE SAMPLING
 
+	VectorXi points1 = VectorXi::Zero(20); 
+	VectorXi points2 = VectorXi::Zero(20); 
 
-	VectorXcd sigma1; //Contains the indexes of sample points in Mid-Edge Mesh 1
-	VectorXcd sigma2; //Contains the indexes of sample points in Mid-Edge Mesh 2
+	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the indexes of sample points in Mid-Edge Mesh 1
+	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the indexes of sample points in Mid-Edge Mesh 2
 
+	int count1 = 0;
+	int count2 = 0;
 
-	//TO DO : MATCH SAMPLE POINTS of "sampled1" and "sample2" WITH THEIR CLOSEST VERTEX IN THE CORRESPONDING MID-EDGE MESH
-	//ADD THE PLANAR EMBEDDING OF THOSE NEW POINTS IN "sigma1" and "sigma2"
-
+	for (int i = 0; i < sampled1.rows(); i++)
+	{
+		if (sampled1(i) == 1)
+		{
+			points1(count1) = i;
+			sigma1(count1) = halfpoints1[he1.getEdge(i)]; //FOR THE MOMENT : Some half-edge. Can do better ! TO IMPROVE
+			count1++;
+		}
+		if (sampled2(i) == 1)
+		{
+			points2(count2) = i;
+			sigma2(count2) = halfpoints2[he2.getEdge(i)]; //FOR THE MOMENT : Some half-edge. Can do better !  TO IMPROVE
+			count2++;
+		}
+	}
 
 	int nbSampled = sigma1.rows();
-
-	MatrixXd C = MatrixXd::Zero(nbSampled,nbSampled);
-
-
+	MatrixXd C = MatrixXd::Zero(nbSampled, nbSampled);
 
 	///////////////////////////////////////////////
 	////////   MOBIUS VOTING ALGORITHM  ///////////
 	///////////////////////////////////////////////
-	
-	for (int i = 0; i < I; i++) {
+
+	for (int i = 0; i < I; i++)
+	{
 
 		//Pick 3 random points in both meshes
 
-		int i1;  
+		int i1;
 		int j1;
 		int k1;
-		int i2;  
+		int i2;
 		int j2;
 		int k2;
 
 		i1 = rand() % nbSampled;
-		do {
+		do
+		{
 			j1 = rand() % nbSampled;
 		} while (j1 == i1);
-		do {
+		do
+		{
 			k1 = rand() % nbSampled;
 		} while (k1 == j1 || k1 == i1);
 
 		i2 = rand() % nbSampled;
-		do {
+		do
+		{
 			j2 = rand() % nbSampled;
 		} while (j2 == i2);
-		do {
+		do
+		{
 			k2 = rand() % nbSampled;
 		} while (k2 == j2 || k2 == i2);
 
 		//Compute Möbius Transformation
 
-		Mobius *mobius1 = new Mobius(sigma1,i1,j1,k1);
-		Mobius *mobius2 = new Mobius(sigma1,i1,j1,k1);
+		Mobius *mobius1 = new Mobius(sigma1, i1, j1, k1);
+		Mobius *mobius2 = new Mobius(sigma2, i2, j2, k2);
 
 		VectorXcd planarPointsAfterMobius1;
 		VectorXcd planarPointsAfterMobius2;
@@ -287,48 +302,104 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		planarPointsAfterMobius1 = mobius1->getNewCoordinates();
 		planarPointsAfterMobius2 = mobius2->getNewCoordinates();
 
+		//FIND MUTUALLY CLOSEST NEIGHBORS AND FILL THEM IN "neigh1", "neigh2"
 
-		//TO-DO : FIND MUTUALLY CLOSEST NEIGHBORS AND FILL THEM IN "neigh1", "neigh2"
+		int nb_neigh = 0;
+		list<int> neigh1;
+		list<int> neigh2;
 
-		VectorXi neigh1;
-		VectorXi neigh2;
-		int n = neigh1.rows();
+		MatrixXd dist = MatrixXd::Zero(nbSampled, nbSampled);
+		VectorXi nn_1 = VectorXi::Zero(nbSampled);
+		VectorXi nn_2 = VectorXi::Zero(nbSampled);
 
-		if (n > K) {
+		for (int i = 0; i < nbSampled; i++)
+		{
+			for (int j = 0; j < nbSampled; j++)
+			{
+				dist(i, j) = abs(planarPointsAfterMobius1[i] - planarPointsAfterMobius2[j]);
+			}
+		}
 
-			double energy;
+		for (int i = 0; i < nbSampled; i++)
+		{
+			double dist_min = dist(i, 0);
+			int nn = 0;
+			for (int j = 1; j < nbSampled; j++)
+			{
+				if (dist(i, j) < dist_min)
+				{
+					dist_min = dist(i, j);
+					nn = j;
+				}
+				nn_1(i) = nn;
+			}
+
+			for (int i = 0; i < nbSampled; i++)
+			{
+				double dist_min = dist(0, i);
+				int nn = 0;
+				for (int j = 1; j < nbSampled; j++)
+				{
+					if (dist(j, i) < dist_min)
+					{
+						dist_min = dist(j, i);
+						nn = j;
+					}
+					nn_2(i) = nn;
+				}
+			}
+
+			for (int i = 0; i < nbSampled; i++)
+			{
+				if (nn_2(nn_1(i)) == i)
+				{
+					nb_neigh++;
+					neigh1.push_front(i);
+					neigh2.push_front(nn_1(i));
+				}
+			}
+		}
+
+		//Vote if the number of mutually closest neighbors > K 
+
+		if (nb_neigh > K)
+		{
+
+			double energy = 1.;
 			//TO-DO : CALCULATE THE ENERGY
 
-			for (int neigh = 0; neigh < n; neigh++) {
+			for (int neigh = 0; neigh < nb_neigh; neigh++)
+			{
 
-				int k = neigh1(neigh);
-				int l = neigh2(neigh);
+				int k = neigh1.front();
+				int l = neigh2.front();
 
-				C(k,l) += 1 / (epsilon + energy/(double)n);
+				neigh1.pop_front();
+				neigh2.pop_front();
+
+				C(k, l) += 1 / (epsilon + energy / (double)nb_neigh);
 			}
 		}
 	}
 
-	return C;
+	std::cout << points1 << std::endl;
+	std::cout << points2 << std::endl;
+	std::cout << C << std::endl;
 
+	return C;
 }
 
 int main(int argc, char *argv[])
 {
 
-	igl::readOFF("../data/star.off", V1, F1);
-	igl::readOFF("../data/star_rotated.off", V2, F2);
+	igl::readOFF("../data/bunny.off", V1, F1);
+	igl::readOFF("../data/bunny_rotated.off", V2, F2);
 
-	MatrixXd C = mobius_voting(V1,F1,V2,F2,0,0,0.1);
-
-	std::cout << C << std::endl;
+	MatrixXd C = mobius_voting(V1, F1, V2, F2, 1000, 20, 0.1);
 
 	igl::readOFF("../data/star.off", V, F);
 
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
-	std::cout << "Press '1' for one round sphere generation" << std::endl
-			  << "Press '2' for one round Loop subdivision" << std::endl
-			  << "Press 'S' save the current mesh to file" << std::endl;
 
 	viewer.callback_key_down = &key_down;
 	viewer.data().set_mesh(V, F);

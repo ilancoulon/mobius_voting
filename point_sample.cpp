@@ -1,11 +1,9 @@
 #include "point_sample.h"
 #include <iostream>
 
-void gaussian_curv()
+VectorXi gaussian_curv(MatrixXd V, MatrixXi F)
 {
 	using namespace std;
-	MatrixXd V;
-	MatrixXi F;
 	igl::readOFF("../../../data/bunny.off", V, F);
 
 	VectorXd K;
@@ -17,7 +15,11 @@ void gaussian_curv()
 	localMaxima(K, V, F, maxima);
 	fpsSampling(V, F, maxima);
 
+	return maxima;
+
 	// Compute pseudocolor
+
+	/* 
 	MatrixXd C;
 
 	igl::jet(maxima, true, C);
@@ -28,7 +30,8 @@ void gaussian_curv()
 	igl::opengl::glfw::Viewer viewer;
 	viewer.data().set_mesh(V, F);
 	viewer.data().set_colors(C);
-	viewer.launch();
+	viewer.launch(); */
+
 }
 
 void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima) {
