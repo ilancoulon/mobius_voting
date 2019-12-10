@@ -227,11 +227,11 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	//TO DO : DO THE SAMPLING
 
-	VectorXi points1 = VectorXi::Zero(20); 
-	VectorXi points2 = VectorXi::Zero(20); 
+	VectorXi points1 = VectorXi::Zero(20);
+	VectorXi points2 = VectorXi::Zero(20);
 
-	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the indexes of sample points in Mid-Edge Mesh 1
-	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the indexes of sample points in Mid-Edge Mesh 2
+	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 1
+	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 2
 
 	int count1 = 0;
 	int count2 = 0;
@@ -241,13 +241,13 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		if (sampled1(i) == 1)
 		{
 			points1(count1) = i;
-			sigma1(count1) = halfpoints1[he1.getEdge(i)]; //FOR THE MOMENT : Some half-edge. Can do better ! TO IMPROVE
+			sigma1(count1) = planarPoints1(halfpoints1[he1.getEdge(i)]); //FOR THE MOMENT : Some half-edge. Can do better ! TO IMPROVE
 			count1++;
 		}
 		if (sampled2(i) == 1)
 		{
 			points2(count2) = i;
-			sigma2(count2) = halfpoints2[he2.getEdge(i)]; //FOR THE MOMENT : Some half-edge. Can do better !  TO IMPROVE
+			sigma2(count2) = planarPoints2(halfpoints2[he2.getEdge(i)]); //FOR THE MOMENT : Some half-edge. Can do better !  TO IMPROVE
 			count2++;
 		}
 	}
@@ -259,7 +259,7 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	////////   MOBIUS VOTING ALGORITHM  ///////////
 	///////////////////////////////////////////////
 
-	for (int i = 0; i < I; i++)
+	for (int iter = 0; iter < I; iter++)
 	{
 
 		//Pick 3 random points in both meshes
@@ -312,6 +312,8 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		VectorXi nn_1 = VectorXi::Zero(nbSampled);
 		VectorXi nn_2 = VectorXi::Zero(nbSampled);
 
+		//Compute distance matrix
+
 		for (int i = 0; i < nbSampled; i++)
 		{
 			for (int j = 0; j < nbSampled; j++)
@@ -320,52 +322,55 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 			}
 		}
 
+		//Compute nn_1
+
 		for (int i = 0; i < nbSampled; i++)
 		{
-			double dist_min = dist(i, 0);
-			int nn = 0;
-			for (int j = 1; j < nbSampled; j++)
+			nn_1(i) = 0;
+			double min_dist = dist(i,0);
+			for (int j = 0; j < nbSampled; j++)
 			{
-				if (dist(i, j) < dist_min)
-				{
-					dist_min = dist(i, j);
-					nn = j;
-				}
-				nn_1(i) = nn;
-			}
-
-			for (int i = 0; i < nbSampled; i++)
-			{
-				double dist_min = dist(0, i);
-				int nn = 0;
-				for (int j = 1; j < nbSampled; j++)
-				{
-					if (dist(j, i) < dist_min)
-					{
-						dist_min = dist(j, i);
-						nn = j;
-					}
-					nn_2(i) = nn;
-				}
-			}
-
-			for (int i = 0; i < nbSampled; i++)
-			{
-				if (nn_2(nn_1(i)) == i)
-				{
-					nb_neigh++;
-					neigh1.push_front(i);
-					neigh2.push_front(nn_1(i));
+				if (dist(i,j) < min_dist) {
+					nn_1(i) = j;
+					min_dist = dist(i,j);
 				}
 			}
 		}
 
-		//Vote if the number of mutually closest neighbors > K 
+		//Compute nn_2
+
+		for (int j = 0; j < nbSampled; j++)
+		{
+			nn_2(j) = 0;
+			double min_dist = dist(0,j);
+			for (int i = 0; i < nbSampled; i++)
+			{
+				if (dist(i,j) < min_dist) {
+					nn_2(j) = i;
+					min_dist = dist(i,j);
+				}
+			}
+		}
+
+		//Add mutual nn to the lists
+
+		for (int i = 0; i < nbSampled; i++)
+		{
+			if (nn_2(nn_1(i)) == i)
+			{
+				nb_neigh++;
+				neigh1.push_front(i);
+				neigh2.push_front(nn_1(i));
+			}
+		}
+
+
+		//Vote if the number of mutually closest neighbors > K
 
 		if (nb_neigh > K)
 		{
 
-			double energy = 1.;
+			double energy = 0.;
 			//TO-DO : CALCULATE THE ENERGY
 
 			for (int neigh = 0; neigh < nb_neigh; neigh++)
@@ -389,21 +394,43 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	return C;
 }
 
+
+
+
 int main(int argc, char *argv[])
 {
 
 	igl::readOFF("../data/bunny.off", V1, F1);
 	igl::readOFF("../data/bunny_rotated.off", V2, F2);
 
-	MatrixXd C = mobius_voting(V1, F1, V2, F2, 1000, 20, 0.1);
+	MatrixXd C = mobius_voting(V1, F1, V2, F2, 1000000, 12, 1);
 
-	igl::readOFF("../data/star.off", V, F);
+
+	//SHORT TEST : C gave a maximum for the point 2 in mesh 1 and 104 in mesh 2
+
+	/*
+
+	VectorXi C1 = VectorXi::Zero(V1.rows());
+	VectorXi C2 = VectorXi::Zero(V2.rows());
+	
+	C1(2) = 1;
+	C2(104) = 1;
+
+	MatrixXd C;
+
+	igl::jet(C1, true, C);
+
+	//
 
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
 
 	viewer.callback_key_down = &key_down;
-	viewer.data().set_mesh(V, F);
+	viewer.data().set_mesh(V2, F2);
+	viewer.data().set_colors(C);
 
-	viewer.core(0).align_camera_center(V, F);
+	viewer.core(0).align_camera_center(V2, F2);
 	viewer.launch(); // run the viewer
+
+	*/
+
 }
