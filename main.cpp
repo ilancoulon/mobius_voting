@@ -446,28 +446,10 @@ int main(int argc, char *argv[])
 
 
 
-
-	//SHORT TEST : C gave a maximum for the point 2 in mesh 1 and 104 in mesh 2
-
-	
-
-	VectorXi C1 = VectorXi::Zero(V1.rows());
-	VectorXi C2 = VectorXi::Zero(V2.rows());
-	
-	C1(116) = 1;
-	C2(2) = 1;
-
-	MatrixXd Color;
-
-	igl::jet(C1, true, Color);
-
-	//
-
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
 
 	viewer.callback_key_down = &key_down;
 	viewer.data().set_mesh(V2, F2);
-	viewer.data().set_colors(Color);
 
 	viewer.core(0).align_camera_center(V2, F2);
 	viewer.launch(); // run the viewer
