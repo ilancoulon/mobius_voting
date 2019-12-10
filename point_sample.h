@@ -4,7 +4,6 @@
 #include <Eigen/SVD>
 #include <Eigen/Eigenvalues>
 
-
 using namespace Eigen;
 #include <igl/octree.h>
 #include <igl/knn.h>
@@ -18,7 +17,6 @@ using namespace Eigen;
 
 #include "HalfedgeBuilder.cpp"
 
-
-void gaussian_curv();
-void localMaxima(VectorXd& K, MatrixXd& V, MatrixXi& F, VectorXi& maxima);
-void fpsSampling(MatrixXd& V, MatrixXi& F, VectorXi& sampled);
+VectorXi gaussian_curv(MatrixXd V, MatrixXi F);
+void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima);
+void fpsSampling(MatrixXd &V, MatrixXi &F, VectorXi &sampled);
