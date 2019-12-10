@@ -148,8 +148,10 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 		5, 1, 4;
 }
 
-MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon)
+void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, VectorXi sampled1, VectorXi sampled2, MatrixXd C)
 {
+
+	//Modifies sampled1, sampled2, and C
 
 	VectorXcd planarPoints1;
 	VectorXcd planarPoints2;
@@ -218,12 +220,12 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	planarPoints2 = planar2->getComplexCoordinates();
 
-	//////////////////////////////////////////////
-	//////////// TAKE SAMPLE POINTS //////////////
-	//////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
+	//////////// TAKE SAMPLE POINTS IN THE MESH //////////////
+	//////////////////////////////////////////////////////////
 
-	VectorXi sampled1 = gaussian_curv(V1, F1);
-	VectorXi sampled2 = gaussian_curv(V2, F2);
+	sampled1 = gaussian_curv(V1, F1);
+	sampled2 = gaussian_curv(V2, F2);
 
 	//TO DO : DO THE SAMPLING
 
@@ -233,6 +235,12 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 1
 	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 2
 
+
+
+    /////////////////////////////////////////////////////////////////
+	////// MATCH THE SAMPLED POINTS IN THE PLANAR EMBEDDING /////////
+	/////////////////////////////////////////////////////////////////
+
 	int count1 = 0;
 	int count2 = 0;
 
@@ -241,26 +249,53 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		if (sampled1(i) == 1)
 		{
 			points1(count1) = i;
-			sigma1(count1) = planarPoints1(halfpoints1[he1.getEdge(i)]); //FOR THE MOMENT : Some half-edge. Can do better ! TO IMPROVE
+			int e = he1.getEdge(i);
+			int bestEdge = e;
+
+			int currentEdge = he1.getOpposite(he1.getNext(e));
+			while (currentEdge != e) {
+
+				if ((V1.row(he1.getTarget(he1.getOpposite(currentEdge))) - V1.row(i)).norm() < (V1.row(he1.getTarget(he1.getOpposite(bestEdge))) - V1.row(i)).norm()) {
+					bestEdge = currentEdge;
+				}
+				currentEdge = he1.getOpposite(he1.getNext(currentEdge));
+			}
+			sigma1(count1) = planarPoints1(halfpoints1[bestEdge]);
 			count1++;
 		}
 		if (sampled2(i) == 1)
 		{
 			points2(count2) = i;
-			sigma2(count2) = planarPoints2(halfpoints2[he2.getEdge(i)]); //FOR THE MOMENT : Some half-edge. Can do better !  TO IMPROVE
+			int e = he2.getEdge(i);
+			int bestEdge = e;
+
+			int currentEdge = he2.getOpposite(he2.getNext(e));
+			while (currentEdge != e) {
+
+				if ((V2.row(he2.getTarget(he2.getOpposite(currentEdge))) - V2.row(i)).norm() < (V2.row(he2.getTarget(he2.getOpposite(bestEdge))) - V2.row(i)).norm()) {
+					bestEdge = currentEdge;
+				}
+				currentEdge = he2.getOpposite(he2.getNext(currentEdge));
+			}
+			sigma2(count2) = planarPoints2(halfpoints2[bestEdge]);
 			count2++;
 		}
 	}
 
-	int nbSampled = sigma1.rows();
-	MatrixXd C = MatrixXd::Zero(nbSampled, nbSampled);
 
 	///////////////////////////////////////////////
 	////////   MOBIUS VOTING ALGORITHM  ///////////
 	///////////////////////////////////////////////
 
+
+	int nbSampled = sigma1.rows();
+	C = MatrixXd::Zero(nbSampled,nbSampled);
+
 	for (int iter = 0; iter < I; iter++)
 	{
+
+		if (iter % (I/100) == 0) 
+		std::cout << (float)iter / (float)I * 100 << " %" << std::endl;
 
 		//Pick 3 random points in both meshes
 
@@ -376,6 +411,7 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 			for (int neigh = 0; neigh < nb_neigh; neigh++)
 			{
 
+
 				int k = neigh1.front();
 				int l = neigh2.front();
 
@@ -391,34 +427,39 @@ MatrixXd mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	std::cout << points2 << std::endl;
 	std::cout << C << std::endl;
 
-	return C;
 }
-
 
 
 
 int main(int argc, char *argv[])
 {
-
+	igl::readOFF("../data/star.off", V, F);
 	igl::readOFF("../data/bunny.off", V1, F1);
 	igl::readOFF("../data/bunny_rotated.off", V2, F2);
 
-	MatrixXd C = mobius_voting(V1, F1, V2, F2, 1000000, 12, 1);
+	VectorXi sampled1;
+	VectorXi sampled2;
+
+	MatrixXd C; 
+	
+	mobius_voting(V1, F1, V2, F2, 100000, 13, 1, sampled1, sampled2, C);
+
+
 
 
 	//SHORT TEST : C gave a maximum for the point 2 in mesh 1 and 104 in mesh 2
 
-	/*
+	
 
 	VectorXi C1 = VectorXi::Zero(V1.rows());
 	VectorXi C2 = VectorXi::Zero(V2.rows());
 	
-	C1(2) = 1;
-	C2(104) = 1;
+	C1(116) = 1;
+	C2(2) = 1;
 
-	MatrixXd C;
+	MatrixXd Color;
 
-	igl::jet(C1, true, C);
+	igl::jet(C1, true, Color);
 
 	//
 
@@ -426,11 +467,11 @@ int main(int argc, char *argv[])
 
 	viewer.callback_key_down = &key_down;
 	viewer.data().set_mesh(V2, F2);
-	viewer.data().set_colors(C);
+	viewer.data().set_colors(Color);
 
 	viewer.core(0).align_camera_center(V2, F2);
 	viewer.launch(); // run the viewer
 
-	*/
+	
 
 }
