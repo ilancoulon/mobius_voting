@@ -11,7 +11,7 @@
 #include "point_sample.h"
 
 #include "mid_edge_uniformisation.cpp"
-#include "planar_embedding.cpp"
+#include "planar_embedding.h"
 #include "mobius_transformation.cpp"
 
 //using namespace Eigen; // to use the classes provided by Eigen library
@@ -148,7 +148,7 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 		5, 1, 4;
 }
 
-VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, VectorXi &points1, VectorXi &points2, MatrixXd &C)
+VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, int numberToSample, VectorXi &points1, VectorXi &points2, MatrixXd &C)
 {
 
 	//Modifies sampled1, sampled2, and C
@@ -187,7 +187,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	cout << " u*...";
 	u_star1 = planar1->u_star(u1);
 
-	cout << " embedding...";
 	planar1->embedding(u1, u_star1);
 
 	planarPoints1 = planar1->getComplexCoordinates();
@@ -219,7 +218,9 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXd u2;
 	VectorXd u_star2;
 
+	cout << " u...";
 	u2 = planar2->u();
+	cout << " u*...";
 	u_star2 = planar2->u_star(u2);
 
 	planar2->embedding(u2, u_star2);
@@ -231,16 +232,15 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	//////////// TAKE SAMPLE POINTS IN THE MESH //////////////
 	//////////////////////////////////////////////////////////
 
-	VectorXi sampled1 = gaussian_curv(V1, F1);
-	VectorXi sampled2 = gaussian_curv(V2, F2);
+	cout << "Sampling...";
+	VectorXi sampled1 = point_sampling(V1, F1, numberToSample);
+	VectorXi sampled2 = point_sampling(V2, F2, numberToSample);
+	cout << "Done!" << endl;
+	points1 = VectorXi::Zero(numberToSample);
+	points2 = VectorXi::Zero(numberToSample);
 
-	//TO DO : DO THE SAMPLING
-
-	points1 = VectorXi::Zero(20);
-	points2 = VectorXi::Zero(20);
-
-	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 1
-	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 2
+	VectorXcd sigma1 = VectorXcd::Zero(numberToSample); //Contains the sample points in Mid-Edge Mesh 1
+	VectorXcd sigma2 = VectorXcd::Zero(numberToSample); //Contains the sample points in Mid-Edge Mesh 2
 
 
 
@@ -438,8 +438,8 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		}
 	}
 
-	std::cout << points1 << std::endl;
-	std::cout << points2 << std::endl;
+	//std::cout << points1 << std::endl;
+	//std::cout << points2 << std::endl;
 	//std::cout << C << std::endl;
 
 	VectorXi correspondances = VectorXi::Zero(nbSampled);
@@ -459,11 +459,11 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 				}
 			}
 		}
-		std::cout << C << std::endl;
-		std::cout << maxFound << std::endl;
-		std::cout << rowMax << std::endl;
-		std::cout << colMax << std::endl;
-		std::cout << "= = = = = = = = = = = = = = = = = = = = " << std::endl;
+		//std::cout << C << std::endl;
+		//std::cout << maxFound << std::endl;
+		//std::cout << rowMax << std::endl;
+		//std::cout << colMax << std::endl;
+		//std::cout << "= = = = = = = = = = = = = = = = = = = = " << std::endl;
 		for (size_t i = 0; i < C.rows(); i++)
 		{
 			C(i, colMax) = -1.;
@@ -485,9 +485,11 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 int main(int argc, char *argv[])
 {
+	string figure1 = "gargoyle_tri.off";
+	string figure2 = "gargoyle_tri_rotated.off";
 	igl::readOFF("../data/star.off", V, F);
-	igl::readOFF("../data/bunny.off", V1, F1);
-	igl::readOFF("../data/bunny_rotated.off", V2, F2);
+	igl::readOFF("../data/"+ figure1, V1, F1);
+	igl::readOFF("../data/"+ figure2, V2, F2);
 
 	VectorXi sampled1;
 	VectorXi sampled2;
@@ -497,7 +499,7 @@ int main(int argc, char *argv[])
 
 	MatrixXd C; 
 	
-	VectorXi correspondances = mobius_voting(V1, F1, V2, F2, 1000000, 15, 0.01, sampled1, sampled2, C);
+	VectorXi correspondances = mobius_voting(V1, F1, V2, F2, 1000000, 15, 0.01, 150, sampled1, sampled2, C);
 
 	std::cout << sampled1 << std::endl;
 	std::cout << sampled2 << std::endl;
@@ -510,8 +512,8 @@ int main(int argc, char *argv[])
 
 	viewer.callback_key_down = &key_down;
 
-	viewer.load_mesh_from_file("../data/bunny.off");
-	viewer.load_mesh_from_file("../data/bunny_rotated.off");
+	viewer.load_mesh_from_file("../data/"+figure1);
+	viewer.load_mesh_from_file("../data/"+figure2);
 
 	unsigned int left_view, right_view;
 	int fig1_id = viewer.data_list[0].id;

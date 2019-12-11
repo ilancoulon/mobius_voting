@@ -17,6 +17,6 @@ using namespace Eigen;
 
 #include "HalfedgeBuilder.cpp"
 
-VectorXi gaussian_curv(MatrixXd V, MatrixXi F);
-void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima);
-void fpsSampling(MatrixXd &V, MatrixXi &F, VectorXi &sampled);
+VectorXi point_sampling(MatrixXd V, MatrixXi F, int numberToSample);
+void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int numberToSample);
+void fpsSampling(MatrixXd &V, MatrixXi &F, VectorXi &sampled, int numberToSample);

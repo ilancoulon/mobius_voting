@@ -1,40 +1,20 @@
 #include "point_sample.h"
 #include <iostream>
 
-VectorXi gaussian_curv(MatrixXd V, MatrixXi F)
-{
+VectorXi point_sampling(MatrixXd V, MatrixXi F, int numberToSample) {
 	using namespace std;
-	//igl::readOFF("../../../data/bunny.off", V, F);
-
 	VectorXd K;
-	// Compute integral of Gaussian curvature
+
 	igl::gaussian_curvature(V, F, K);
 
-
 	VectorXi maxima;
-	localMaxima(K, V, F, maxima);
-	fpsSampling(V, F, maxima);
-
+	localMaxima(K, V, F, maxima, numberToSample);
+	fpsSampling(V, F, maxima, numberToSample);
 	return maxima;
-
-	// Compute pseudocolor
-
-	/* 
-	MatrixXd C;
-
-	igl::jet(maxima, true, C);
-
-
-
-	// Plot the mesh with pseudocolors
-	igl::opengl::glfw::Viewer viewer;
-	viewer.data().set_mesh(V, F);
-	viewer.data().set_colors(C);
-	viewer.launch(); */
 
 }
 
-void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima) {
+void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int numberToSample) {
 	// We use the half-edge data structure to easily get the neighbors
 	HalfedgeBuilder* builder = new HalfedgeBuilder();
 	HalfedgeDS heDs = builder->createMeshWithFaces(V.rows(), F);
@@ -42,8 +22,10 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima) {
 
 	maxima = VectorXi::Zero(K.rows());
 
+	int maximaFound = 0;
+
 	// Iterate over the vertices
-	for (size_t i = 0; i < V.rows(); i++)
+	for (size_t i = 0; i < V.rows() && maximaFound < numberToSample; i++)
 	{
 		bool isMax = true;
 		int startHe = heDs.getEdge(i);
@@ -61,13 +43,13 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima) {
 		}
 		if (isMax) {
 			maxima(i) = 1;
+			maximaFound++;
 		}
 	}
 }
 
-void fpsSampling(MatrixXd& V, MatrixXi& F, VectorXi& sampled) {
+void fpsSampling(MatrixXd& V, MatrixXi& F, VectorXi& sampled, int numberToSample) {
 	Eigen::VectorXi VS, FS, VT, FT;
-	int n = 20;
 	int nSampled = 0;
 	for (size_t i = 0; i < sampled.rows(); i++)
 	{
@@ -85,7 +67,7 @@ void fpsSampling(MatrixXd& V, MatrixXi& F, VectorXi& sampled) {
 
 	VT.setLinSpaced(V.rows(), 0, V.rows() - 1);
 
-	while (nSampled < n) {
+	while (nSampled < numberToSample) {
 		VS = VectorXi::Zero(nSampled);
 		int j = 0;
 		for (size_t i = 0; i < sampled.rows(); i++)
