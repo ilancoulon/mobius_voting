@@ -4,7 +4,7 @@
 VectorXi gaussian_curv(MatrixXd V, MatrixXi F)
 {
 	using namespace std;
-	igl::readOFF("../../../data/bunny.off", V, F);
+	//igl::readOFF("../../../data/bunny.off", V, F);
 
 	VectorXd K;
 	// Compute integral of Gaussian curvature
