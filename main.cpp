@@ -148,7 +148,7 @@ void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
 		5, 1, 4;
 }
 
-void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, VectorXi sampled1, VectorXi sampled2, MatrixXd C)
+VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, VectorXi &points1, VectorXi &points2, MatrixXd &C)
 {
 
 	//Modifies sampled1, sampled2, and C
@@ -176,22 +176,28 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 	HalfedgeBuilder *buildermid1 = new HalfedgeBuilder();
 	HalfedgeDS hemid1 = (buildermid1->createMeshWithFaces(Vmid1.rows(), Fmid1));
 
+	cout << "Planar Embedding for Shape 1...";
 	PlanarEmbedding *planar1 = new PlanarEmbedding(V1, F1, he1, Vmid1, Fmid1, hemid1, halfpoints1);
 
 	VectorXd u1;
 	VectorXd u_star1;
+	cout << " u...";
 
 	u1 = planar1->u();
+	cout << " u*...";
 	u_star1 = planar1->u_star(u1);
 
+	cout << " embedding...";
 	planar1->embedding(u1, u_star1);
 
 	planarPoints1 = planar1->getComplexCoordinates();
+	cout << "Done !" << endl;
 
 	/////////////////////////////////////////////////
 	///////// Planar Embedding for Shape 2 //////////
 	/////////////////////////////////////////////////
 
+	
 	HalfedgeBuilder *builder2 = new HalfedgeBuilder();
 	HalfedgeDS he2 = (builder2->createMeshWithFaces(V2.rows(), F2)); // create the half-edge representation
 	MidEdge *midedge2 = new MidEdge(V2, F2, he2);
@@ -207,7 +213,7 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 
 	HalfedgeBuilder *buildermid2 = new HalfedgeBuilder();
 	HalfedgeDS hemid2 = (buildermid2->createMeshWithFaces(Vmid2.rows(), Fmid2));
-
+	cout << "Planar Embedding for Shape 2...";
 	PlanarEmbedding *planar2 = new PlanarEmbedding(V2, F2, he2, Vmid2, Fmid2, hemid2, halfpoints2);
 
 	VectorXd u2;
@@ -219,18 +225,19 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 	planar2->embedding(u2, u_star2);
 
 	planarPoints2 = planar2->getComplexCoordinates();
+	cout << "Done !" << endl;
 
 	//////////////////////////////////////////////////////////
 	//////////// TAKE SAMPLE POINTS IN THE MESH //////////////
 	//////////////////////////////////////////////////////////
 
-	sampled1 = gaussian_curv(V1, F1);
-	sampled2 = gaussian_curv(V2, F2);
+	VectorXi sampled1 = gaussian_curv(V1, F1);
+	VectorXi sampled2 = gaussian_curv(V2, F2);
 
 	//TO DO : DO THE SAMPLING
 
-	VectorXi points1 = VectorXi::Zero(20);
-	VectorXi points2 = VectorXi::Zero(20);
+	points1 = VectorXi::Zero(20);
+	points2 = VectorXi::Zero(20);
 
 	VectorXcd sigma1 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 1
 	VectorXcd sigma2 = VectorXcd::Zero(20); //Contains the sample points in Mid-Edge Mesh 2
@@ -404,9 +411,16 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 
 		if (nb_neigh > K)
 		{
-
+			// Computing the energy...
 			double energy = 0.;
-			//TO-DO : CALCULATE THE ENERGY
+			list<int>::iterator it1 = neigh1.begin();
+			list<int>::iterator it2 = neigh2.begin();
+			while (it1 != neigh1.end())
+			{
+				energy += dist(*it1, *it2);
+				it1++;
+				it2++;
+			}
 
 			for (int neigh = 0; neigh < nb_neigh; neigh++)
 			{
@@ -414,6 +428,7 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 
 				int k = neigh1.front();
 				int l = neigh2.front();
+
 
 				neigh1.pop_front();
 				neigh2.pop_front();
@@ -425,7 +440,44 @@ void mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, in
 
 	std::cout << points1 << std::endl;
 	std::cout << points2 << std::endl;
-	std::cout << C << std::endl;
+	//std::cout << C << std::endl;
+
+	VectorXi correspondances = VectorXi::Zero(nbSampled);
+	int foundCorrespondances = 0;
+	while (foundCorrespondances < nbSampled) {
+		double maxFound = -1.;
+		int rowMax = 0;
+		int colMax = 0;
+		for (size_t i = 0; i < C.rows(); i++)
+		{
+			for (size_t j = 0; j < C.cols(); j++)
+			{
+				if (C(i, j) > maxFound) {
+					maxFound = C(i, j);
+					rowMax = i;
+					colMax = j;
+				}
+			}
+		}
+		std::cout << C << std::endl;
+		std::cout << maxFound << std::endl;
+		std::cout << rowMax << std::endl;
+		std::cout << colMax << std::endl;
+		std::cout << "= = = = = = = = = = = = = = = = = = = = " << std::endl;
+		for (size_t i = 0; i < C.rows(); i++)
+		{
+			C(i, colMax) = -1.;
+		}
+		for (size_t j = 0; j < C.cols(); j++)
+		{
+			C(rowMax, j) = -1.;
+		}
+		if (maxFound != -1)
+			correspondances[rowMax] = colMax;
+		foundCorrespondances++;
+	}
+
+	return correspondances;
 
 }
 
@@ -440,18 +492,55 @@ int main(int argc, char *argv[])
 	VectorXi sampled1;
 	VectorXi sampled2;
 
+	VectorXi points1 = VectorXi::Zero(20);
+	VectorXi points2 = VectorXi::Zero(20);
+
 	MatrixXd C; 
 	
-	mobius_voting(V1, F1, V2, F2, 100000, 13, 1, sampled1, sampled2, C);
+	VectorXi correspondances = mobius_voting(V1, F1, V2, F2, 1000000, 15, 0.01, sampled1, sampled2, C);
+
+	std::cout << sampled1 << std::endl;
+	std::cout << sampled2 << std::endl;
+	std::cout << C << std::endl;
+	std::cout << correspondances << std::endl;
 
 
 
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
 
 	viewer.callback_key_down = &key_down;
-	viewer.data().set_mesh(V2, F2);
 
-	viewer.core(0).align_camera_center(V2, F2);
+	viewer.load_mesh_from_file("../data/bunny.off");
+	viewer.load_mesh_from_file("../data/bunny_rotated.off");
+
+	unsigned int left_view, right_view;
+	int fig1_id = viewer.data_list[0].id;
+	int fig2_id = viewer.data_list[1].id;
+	viewer.callback_init = [&](igl::opengl::glfw::Viewer&)
+	{
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
+		left_view = viewer.core_list[0].id;
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
+		viewer.core(left_view).align_camera_center(V1, F1);
+		viewer.core(right_view).align_camera_center(V2, F2);
+		viewer.data(fig1_id).set_visible(false, right_view);
+		viewer.data(fig2_id).set_visible(false, left_view);
+		return false;
+	};
+
+	for (size_t i = 0; i < correspondances.rows(); i++)
+	{
+		float r = (float)std::rand() / (float)RAND_MAX;
+		float g = (float)std::rand() / (float)RAND_MAX;
+		float b = (float) std::rand() / (float) RAND_MAX;
+
+		viewer.data(fig1_id).add_points(V1.row(sampled1[i]), Eigen::RowVector3d(r, g, b));
+		viewer.data(fig2_id).add_points(V2.row(sampled2[correspondances[i]]), Eigen::RowVector3d(r, g, b));
+	}
+
+	//viewer.data().set_mesh(V2, F2);
+
+	
 	viewer.launch(); // run the viewer
 
 	
