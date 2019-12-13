@@ -19,6 +19,8 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int nu
 	HalfedgeBuilder* builder = new HalfedgeBuilder();
 	HalfedgeDS heDs = builder->createMeshWithFaces(V.rows(), F);
 
+	int numberOfMaximaToFind = round((float)numberToSample * 3. / 4.);
+
 
 	maxima = VectorXi::Zero(K.rows());
 	VectorXd maximaCurvature = VectorXd::Zero(K.rows());
@@ -50,7 +52,7 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int nu
 	}
 
 	
-	for (size_t i = 0; i < numberToSample; i++)
+	for (size_t i = 0; i < numberOfMaximaToFind; i++)
 	{
 		double maximumMaxima = -1.;
 		int maxIndex = -1;
