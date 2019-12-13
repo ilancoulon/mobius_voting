@@ -21,11 +21,13 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int nu
 
 
 	maxima = VectorXi::Zero(K.rows());
+	VectorXd maximaCurvature = VectorXd::Zero(K.rows());
+
 
 	int maximaFound = 0;
 
 	// Iterate over the vertices
-	for (size_t i = 0; i < V.rows() && maximaFound < numberToSample; i++)
+	for (size_t i = 0; i < V.rows(); i++)
 	{
 		bool isMax = true;
 		int startHe = heDs.getEdge(i);
@@ -42,9 +44,25 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int nu
 			currentHe = heDs.getOpposite(heDs.getNext(currentHe));
 		}
 		if (isMax) {
-			maxima(i) = 1;
+			maximaCurvature(i) = K(i);
 			maximaFound++;
 		}
+	}
+
+	
+	for (size_t i = 0; i < numberToSample; i++)
+	{
+		double maximumMaxima = -1.;
+		int maxIndex = -1;
+		for (size_t j = 0; j < maximaCurvature.rows(); j++)
+		{
+			if (maximaCurvature(j) > maximumMaxima) {
+				maximumMaxima = maximaCurvature(j);
+				maxIndex = j;
+			}
+		}
+		maximaCurvature(maxIndex) = 0;
+		maxima(maxIndex) = 1;
 	}
 }
 
