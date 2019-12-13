@@ -105,9 +105,6 @@ private:
         return 0.5 * (v0 + v1);
     }
 
-    /**
-	 * Given a vertex 'v' of the original mesh, compute and return its new coordinates
-	 */
 
     int vertexDegree(int v)
     {
