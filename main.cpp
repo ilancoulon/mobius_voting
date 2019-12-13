@@ -501,23 +501,25 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	std::cout << C << std::endl;
 
 	VectorXi correspondances = VectorXi::Zero(nbSampled);
+
+	for (size_t i = 0; i < correspondances.rows(); i++)
+	{
+		correspondances(i) = -1;
+	} 
+
 	int foundCorrespondances = 0;
-/*
+
 	double realMax = -1.;
-	int rowMax = 0;
-	int colMax = 0;
 	for (size_t i = 0; i < C.rows(); i++)
 	{
 		for (size_t j = 0; j < C.cols(); j++)
 		{
 			if (C(i, j) > realMax)
-			{
 				realMax = C(i, j);
-				rowMax = i;
-				colMax = j;
-			}
 		}
-	} */
+	} 
+
+	cout << realMax << endl;
 
 	while (foundCorrespondances < nbSampled)
 	{
@@ -549,7 +551,8 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		{
 			C(rowMax, j) = -1.;
 		}
-		if (maxFound != -1) 
+		cout << maxFound << endl;
+		if ((maxFound != -1) && maxFound >= 0 * realMax)
 			correspondances[rowMax] = colMax;
 		foundCorrespondances++;
 	}
@@ -562,8 +565,8 @@ int main(int argc, char *argv[])
 	string figure1 = "human_training/Real/Data/0.obj";
 	string figure2 = "human_training/Real/Data/1.obj";
 
-	//string figure1 = "gargoyle_tri.off";
-	//string figure2 = "gargoyle_tri_rotated.off";
+	//string figure1 = "bunny.off";
+	//string figure2 = "bunny_rotated.off";
 
 	igl::readOFF("../data/star.off", V, F);
 
@@ -579,7 +582,7 @@ int main(int argc, char *argv[])
 
 	VectorXi correspondances;
 
-	correspondances = mobius_voting(V1, F1, V2, F2, 3000000, 30, 0.1, 80, points1, points2, C);
+	correspondances = mobius_voting(V1, F1, V2, F2, 1250000, 20, 0.1, 50, points1, points2, C);
 
 	std::cout << points1 << std::endl;
 	std::cout << points2 << std::endl;
@@ -613,7 +616,7 @@ int main(int argc, char *argv[])
 
 	for (size_t i = 0; i < correspondances.rows(); i++)
 	{
-		if (correspondances[i] != -1) {
+		if (correspondances(i) != -1) {
 		float r = (float)std::rand() / (float)RAND_MAX;
 		float g = (float)std::rand() / (float)RAND_MAX;
 		float b = (float)std::rand() / (float)RAND_MAX;
