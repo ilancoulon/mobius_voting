@@ -386,13 +386,11 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	return correspondances;
 }
 
-int main(int argc, char *argv[])
-{
-	string figure1 = "SHREC15/test/0.obj";
-	string figure2 = "SHREC15/test/1.obj";
+void doPlanarEmbedding(string figure1) {
 
-	//string figure1 = "bunny.off";
-	//string figure2 = "bunny_rotated.off";
+}
+
+void doMobiusVoting(string figure1, string figure2) {
 
 	igl::readOBJ("../data/" + figure1, V1, F1);
 	igl::readOBJ("../data/" + figure2, V2, F2);
@@ -449,4 +447,48 @@ int main(int argc, char *argv[])
 	}
 
 	viewer.launch(); 
+
+}
+
+int main(int argc, char *argv[])
+{
+	string figure1 = "SHREC15/test/0.obj";
+	string figure2 = "SHREC15/test/1.obj";
+
+	//string figure1 = "bunny.off";
+	//string figure2 = "bunny_rotated.off";
+
+	int toCall;
+
+	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Möbius Voting"  << std::endl;
+	std::cin >> toCall;
+
+	if (toCall == 1) {
+		string figure1;
+
+		std::cout << "Enter figure path..." << std::endl;
+
+		std::cin >> figure1;
+
+		doPlanarEmbedding(figure1);
+
+	}
+	else  {
+
+		string figure1;
+		string figure2;
+
+		std::cout << "Enter figure 1 path..." << std::endl;
+
+		std::cin >> figure1;
+
+		std::cout << "Enter figure 2 path..." << std::endl;
+
+		std::cin >> figure2;
+
+
+
+		doMobiusVoting(figure1, figure2);
+	}
+
 }
