@@ -4,12 +4,15 @@
 #include <igl/octree.h>
 #include <igl/knn.h>
 #include <igl/writeOBJ.h>
+#include <igl/file_exists.h>
+#include <igl/pathinfo.h>
 #include <iostream>
 #include <ostream>
 #include <list>
+#include <nanoflann.ĥpp>
 
 #include "point_sample.h"
-#include <nanoflann.hpp>
+//#include "nanoflann/include/nanoflann.hpp"
 #include "mid_edge_uniformisation.cpp"
 #include "planar_embedding.h"
 #include "mobius_transformation.cpp"
@@ -19,6 +22,8 @@ MatrixXd V1;
 MatrixXi F1;
 MatrixXd V2;
 MatrixXi F2;
+
+string rootPath = "../data/";
 
 
 
@@ -390,10 +395,31 @@ void doPlanarEmbedding(string figure1) {
 
 }
 
-void doMobiusVoting(string figure1, string figure2) {
+string getExtensionFromFilename(string mesh_filename) {
+	string dirname, basename, extension, filename;
+	igl::pathinfo(mesh_filename, dirname, basename, extension, filename);
+	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+	return extension;
+}
 
-	igl::readOBJ("../data/" + figure1, V1, F1);
-	igl::readOBJ("../data/" + figure2, V2, F2);
+void doMobiusVoting(string figure1, string figure2) {
+	// Reading 1st file
+	string extension1 = getExtensionFromFilename(rootPath + figure1);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure1, V1, F1);
+	}
+	else {
+		igl::readOFF(rootPath + figure1, V1, F1);
+	}
+
+	// Reading 2nd file
+	string extension2 = getExtensionFromFilename(rootPath + figure2);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure2, V2, F2);
+	}
+	else {
+		igl::readOFF(rootPath + figure2, V2, F2);
+	}
 
 
 	VectorXi points1;
@@ -413,8 +439,8 @@ void doMobiusVoting(string figure1, string figure2) {
 	igl::opengl::glfw::Viewer viewer; 
 
 
-	viewer.load_mesh_from_file("../data/star.off");
-	viewer.load_mesh_from_file("../data/star.off");
+	viewer.load_mesh_from_file(rootPath+"star.off");
+	viewer.load_mesh_from_file(rootPath+"star.off");
 
 	unsigned int left_view, right_view;
 	int fig1_id = viewer.data_list[0].id;
@@ -452,8 +478,7 @@ void doMobiusVoting(string figure1, string figure2) {
 
 int main(int argc, char *argv[])
 {
-	string figure1 = "SHREC15/test/0.obj";
-	string figure2 = "SHREC15/test/1.obj";
+	
 
 	//string figure1 = "bunny.off";
 	//string figure2 = "bunny_rotated.off";
@@ -462,13 +487,27 @@ int main(int argc, char *argv[])
 
 	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Möbius Voting"  << std::endl;
 	std::cin >> toCall;
+	std::cin.clear();
+	std::cin.ignore(10, '\n');
 
 	if (toCall == 1) {
 		string figure1;
+		string defaultFigure = "bunny.off";
 
-		std::cout << "Enter figure path..." << std::endl;
+		do
+		{
+			std::cout << "Enter figure path... [" << defaultFigure << "] ";
 
-		std::cin >> figure1;
+			
+			getline(std::cin, figure1);
+			if (figure1.empty()) {
+				figure1 = defaultFigure;
+			}
+
+			if (!igl::file_exists(rootPath + figure1)) {
+				std::cout << figure1 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath + figure1));
 
 		doPlanarEmbedding(figure1);
 
@@ -476,15 +515,39 @@ int main(int argc, char *argv[])
 	else  {
 
 		string figure1;
+		string defaultFigure1 = "SHREC15/test/0.obj";
 		string figure2;
+		string defaultFigure2 = "SHREC15/test/1.obj";
 
-		std::cout << "Enter figure 1 path..." << std::endl;
+		do
+		{
+			std::cout << "Enter figure 1 path... [" << defaultFigure1 << "] ";
 
-		std::cin >> figure1;
+			getline(std::cin, figure1);
+			if (figure1.empty()) {
+				figure1 = defaultFigure1;
+			}
 
-		std::cout << "Enter figure 2 path..." << std::endl;
+			if (!igl::file_exists(rootPath + figure1)) {
+				std::cout << figure1 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath+figure1));
+		
 
-		std::cin >> figure2;
+		do
+		{
+			std::cout << "Enter figure 2 path... [" << defaultFigure2 << "] ";
+
+			getline(std::cin, figure2);
+			if (figure2.empty()) {
+				figure2 = defaultFigure2;
+			}
+
+
+			if (!igl::file_exists(rootPath + figure2)) {
+				std::cout << figure2 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath + figure2));
 
 
 
