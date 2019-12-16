@@ -391,15 +391,83 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	return correspondances;
 }
 
-void doPlanarEmbedding(string figure1) {
-
-}
-
 string getExtensionFromFilename(string mesh_filename) {
 	string dirname, basename, extension, filename;
 	igl::pathinfo(mesh_filename, dirname, basename, extension, filename);
 	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 	return extension;
+}
+
+void doPlanarEmbedding(string figure1) {
+	string extension1 = getExtensionFromFilename(rootPath + figure1);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure1, V1, F1);
+	}
+	else {
+		igl::readOFF(rootPath + figure1, V1, F1);
+	}
+
+
+	HalfedgeBuilder* builder1 = new HalfedgeBuilder();
+	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1));
+	MidEdge* midedge1 = new MidEdge(V1, F1, he1);
+	midedge1->makeMidEdge();
+
+	MatrixXd Vmid1;
+	MatrixXi Fmid1;
+	int* halfpoints1;
+
+	Vmid1 = midedge1->getVertexCoordinates();
+	Fmid1 = midedge1->getFaces();
+	halfpoints1 = midedge1->getHalfPoints();
+
+	HalfedgeBuilder* buildermid1 = new HalfedgeBuilder();
+	HalfedgeDS hemid1 = (buildermid1->createMeshWithFaces(Vmid1.rows(), Fmid1));
+
+	cout << "Planar Embedding for Shape ...";
+	PlanarEmbedding* planar1 = new PlanarEmbedding(V1, F1, he1, Vmid1, Fmid1, hemid1, halfpoints1);
+
+	VectorXd u1;
+	VectorXd u_star1;
+	cout << " u...";
+
+	u1 = planar1->u();
+	cout << " u*...";
+	u_star1 = planar1->u_star(u1);
+
+	planar1->embedding(u1, u_star1);
+
+	cout << "Done !" << endl;
+
+	MatrixXd vertexCoordinates = planar1->getVertexCoordinates();
+	MatrixXd V_embedded = MatrixXd::Zero(vertexCoordinates.rows(), 3);
+	for (size_t i = 0; i < V_embedded.rows(); i++)
+	{
+		V_embedded.row(i) << vertexCoordinates(i, 0), vertexCoordinates(i, 1), 0.;
+	}
+
+	igl::opengl::glfw::Viewer viewer;
+	viewer.load_mesh_from_file(rootPath + "star.off");
+	viewer.load_mesh_from_file(rootPath + "star.off");
+
+	unsigned int left_view, right_view;
+	int fig1_id = viewer.data_list[0].id;
+	int fig2_id = viewer.data_list[1].id;
+	viewer.data(fig1_id).clear();
+	viewer.data(fig2_id).clear();
+	viewer.data(fig1_id).set_mesh(V1, F1);
+	viewer.data(fig2_id).set_mesh(V_embedded, Fmid1);
+	viewer.callback_init = [&](igl::opengl::glfw::Viewer&) {
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
+		left_view = viewer.core_list[0].id;
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
+		viewer.core(left_view).align_camera_center(V1, F1);
+		viewer.core(right_view).align_camera_center(V2, F2);
+		viewer.data(fig1_id).set_visible(false, right_view);
+		viewer.data(fig2_id).set_visible(false, left_view);
+		return false;
+	};
+	viewer.launch();
 }
 
 void doMobiusVoting(string figure1, string figure2) {
@@ -429,7 +497,7 @@ void doMobiusVoting(string figure1, string figure2) {
 
 	VectorXi correspondances;
 
-	correspondances = mobius_voting(V1, F1, V2, F2, 12000000, 100, 25, 0.3, points1, points2, C);
+	correspondances = mobius_voting(V1, F1, V2, F2, 12000, 20, 25, 0.3, points1, points2, C);
 
 	//std::cout << points1 << std::endl;
 	//std::cout << points2 << std::endl;
