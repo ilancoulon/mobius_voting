@@ -9,145 +9,18 @@
 #include <list>
 
 #include "point_sample.h"
-
 #include <nanoflann.hpp>
 #include "mid_edge_uniformisation.cpp"
 #include "planar_embedding.h"
 #include "mobius_transformation.cpp"
 
-//using namespace Eigen; // to use the classes provided by Eigen library
-MatrixXd V1; // matrix storing vertex coordinates of the input curve
+
+MatrixXd V1; 
 MatrixXi F1;
-MatrixXd V2; // matrix storing vertex coordinates of the input curve
+MatrixXd V2;
 MatrixXi F2;
 
-MatrixXd V;
-MatrixXi F;
 
-VectorXd u;
-VectorXd u_star;
-
-MatrixXd Vmid;
-MatrixXi Fmid;
-
-VectorXcd planarPoints;
-VectorXcd planarPointsAfterMobius;
-
-int *halfpoints;
-
-bool key_down(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifier)
-{
-	std::cout << "pressed Key: " << key << " " << (unsigned int)key << std::endl;
-
-	if (key == '2')
-	{
-		HalfedgeBuilder *builder = new HalfedgeBuilder();
-		HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
-		MidEdge *midedge = new MidEdge(V, F, he);					 //
-		midedge->subdivide();
-
-		// update the current mesh
-		V = midedge->getVertexCoordinates(); // update vertex coordinates
-		F = midedge->getFaces();
-		viewer.data().clear();
-		viewer.data().set_mesh(V, F);
-		return true;
-	}
-
-	if (key == '3')
-	{
-		HalfedgeBuilder *builder = new HalfedgeBuilder();
-		HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
-		MidEdge *midedge = new MidEdge(V, F, he);
-		midedge->subdivide();
-
-		Vmid = midedge->getVertexCoordinates();
-		Fmid = midedge->getFaces();
-		halfpoints = midedge->getHalfPoints();
-
-		HalfedgeBuilder *builder2 = new HalfedgeBuilder();
-		HalfedgeDS hemid = (builder2->createMeshWithFaces(Vmid.rows(), Fmid));
-
-		PlanarEmbedding *planar = new PlanarEmbedding(V, F, he, Vmid, Fmid, hemid, halfpoints);
-
-		u = planar->u();
-		u_star = planar->u_star(u);
-
-		planar->embedding(u, u_star);
-
-		V = planar->getVertexCoordinates(); // update vertex coordinates
-		F = planar->getFaces();
-
-		planarPoints = planar->getComplexCoordinates();
-
-		//std::cout << planarPoints << std::endl << std::endl;
-
-		Mobius *mobius = new Mobius(planarPoints, 0, 1, 2);
-
-		planarPointsAfterMobius = mobius->getNewCoordinates();
-
-		//std::cout << planarPointsAfterMobius << std::endl << std::endl;
-
-		viewer.data().clear();
-		viewer.data().set_mesh(V, F);
-		return true;
-	}
-
-	return false;
-}
-
-void draw_normals(igl::opengl::glfw::Viewer &viewer, const MatrixXd &V, const MatrixXd &n)
-{
-	MatrixXd current_edge(V.rows(), 3);
-	for (unsigned i = 1; i < V.rows() - 1; ++i)
-	{
-		current_edge(i, 0) = V(i, 0) + n(i, 0);
-		current_edge(i, 1) = V(i, 1) + n(i, 1);
-		current_edge(i, 2) = V(i, 2) + n(i, 2);
-		viewer.data().add_edges(
-			V.row(i),
-			current_edge.row(i),
-			Eigen::RowVector3d(1, 1, 1));
-	}
-}
-
-void set_meshes(igl::opengl::glfw::Viewer &viewer)
-{
-	viewer.callback_key_down = &key_down; // for dealing with keyboard events
-	viewer.data().set_mesh(V1, F1);
-	viewer.append_mesh();
-	viewer.data().set_mesh(V2, F2);
-	viewer.data(0).set_colors(Eigen::RowVector3d(0.3, 0.8, 0.3));
-	viewer.data(1).set_colors(Eigen::RowVector3d(0.8, 0.3, 0.3));
-}
-
-void set_pc(igl::opengl::glfw::Viewer &viewer)
-{
-	viewer.callback_key_down = &key_down; // for dealing with keyboard events
-	viewer.data().add_points(V1, Eigen::RowVector3d(0.3, 0.8, 0.3));
-}
-
-void createOctagon(MatrixXd &Vertices, MatrixXi &Faces)
-{
-	Vertices = MatrixXd(6, 3);
-	Faces = MatrixXi(8, 3);
-
-	Vertices << 0.0, 0.0, 1.0,
-		1.000000, 0.000000, 0.000000,
-		0.000000, 1.000000, 0.000000,
-		-1.000000, 0.000000, 0.000000,
-		0.000000, -1.000000, 0.000000,
-		0.000000, 0.000000, -1.000000;
-
-	Faces << 0, 1, 2,
-		0, 2, 3,
-		0, 3, 4,
-		0, 4, 1,
-		5, 2, 1,
-		5, 3, 2,
-		5, 4, 3,
-		5, 1, 4;
-}
 
 void nearest_neighbour(const MatrixXd &V1, const MatrixXd &V2, VectorXi &nn){
 
@@ -168,7 +41,7 @@ void nearest_neighbour(const MatrixXd &V1, const MatrixXd &V2, VectorXi &nn){
 	}
 }
 
-VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int K, double epsilon, int numberToSample, VectorXi &points1, VectorXi &points2, MatrixXd &C)
+VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int numberToSample, int K, double confidenceLevel, VectorXi &points1, VectorXi &points2, MatrixXd &C)
 {
 
 	//Modifies sampled1, sampled2, and C
@@ -181,9 +54,9 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	////////////////////////////////////////////////
 
 	HalfedgeBuilder *builder1 = new HalfedgeBuilder();
-	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1)); // create the half-edge representation
+	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1)); 
 	MidEdge *midedge1 = new MidEdge(V1, F1, he1);
-	midedge1->subdivide();
+	midedge1->makeMidEdge();
 
 	MatrixXd Vmid1;
 	MatrixXi Fmid1;
@@ -217,9 +90,9 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	/////////////////////////////////////////////////
 
 	HalfedgeBuilder *builder2 = new HalfedgeBuilder();
-	HalfedgeDS he2 = (builder2->createMeshWithFaces(V2.rows(), F2)); // create the half-edge representation
+	HalfedgeDS he2 = (builder2->createMeshWithFaces(V2.rows(), F2));
 	MidEdge *midedge2 = new MidEdge(V2, F2, he2);
-	midedge2->subdivide();
+	midedge2->makeMidEdge();
 
 	MatrixXd Vmid2;
 	MatrixXi Fmid2;
@@ -270,8 +143,8 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	int count1 = 0;
 	int count2 = 0;
 
-	std::cout << sampled1.rows() << std::endl;
-	std::cout << sampled2.rows() << std::endl;
+	//std::cout << sampled1.rows() << std::endl;
+	//std::cout << sampled2.rows() << std::endl;
 
 	int max = sampled2.rows();
 	if (sampled1.rows() > sampled2.rows()) max = sampled1.rows();
@@ -401,58 +274,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		//std::cout << nn_1 << std::endl;
 		//std::cout << nn_2 << std::endl;
 
-		/*
-
-		MatrixXd dist = MatrixXd::Zero(nbSampled, nbSampled);
-		nn_1 = VectorXi::Zero(nbSampled);
-		nn_2 = VectorXi::Zero(nbSampled);
-		
-
-		//Compute distance matrix
-
-		for (int i = 0; i < nbSampled; i++)
-		{
-			for (int j = 0; j < nbSampled; j++)
-			{
-				dist(i, j) = abs(complexPointsAfterMobius1[i] - complexPointsAfterMobius2[j]);
-			}
-		}
-
-		//Compute nn_1
-
-		for (int i = 0; i < nbSampled; i++)
-		{
-			nn_1(i) = 0;
-			double min_dist = dist(i, 0);
-			for (int j = 0; j < nbSampled; j++)
-			{
-				if (dist(i, j) < min_dist)
-				{
-					nn_1(i) = j;
-					min_dist = dist(i, j);
-				}
-			}
-		}
-
-		//Compute nn_2
-
-		for (int j = 0; j < nbSampled; j++)
-		{
-			nn_2(j) = 0;
-			double min_dist = dist(0, j);
-			for (int i = 0; i < nbSampled; i++)
-			{
-				if (dist(i, j) < min_dist)
-				{
-					nn_2(j) = i;
-					min_dist = dist(i, j);
-				}
-			}
-		}
-
-		
-		*/
-		
 		
 
 		//Add mutual nn to the lists
@@ -468,6 +289,8 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		}
 
 		//Vote if the number of mutually closest neighbors > K
+
+		double epsilon = 0.1;
 
 		if (nb_neigh > K)
 		{
@@ -498,7 +321,7 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	//std::cout << points1 << std::endl;
 	//std::cout << points2 << std::endl;
-	std::cout << C << std::endl;
+	//std::cout << C << std::endl;
 
 	VectorXi correspondances = VectorXi::Zero(nbSampled);
 
@@ -519,7 +342,7 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		}
 	} 
 
-	cout << realMax << endl;
+	//cout << realMax << endl;
 
 	while (foundCorrespondances < nbSampled)
 	{
@@ -538,11 +361,12 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 				}
 			}
 		}
+
 		//std::cout << C << std::endl;
 		//std::cout << maxFound << std::endl;
 		//std::cout << rowMax << std::endl;
 		//std::cout << colMax << std::endl;
-		//std::cout << "= = = = = = = = = = = = = = = = = = = = " << std::endl;
+
 		for (size_t i = 0; i < C.rows(); i++)
 		{
 			C(i, colMax) = -1.;
@@ -551,8 +375,10 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		{
 			C(rowMax, j) = -1.;
 		}
-		cout << maxFound << endl;
-		if ((maxFound != -1) && maxFound >= 0 * realMax)
+
+		//cout << maxFound << endl;
+
+		if ((maxFound != -1) && maxFound >= confidenceLevel * realMax)
 			correspondances[rowMax] = colMax;
 		foundCorrespondances++;
 	}
@@ -562,18 +388,15 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 int main(int argc, char *argv[])
 {
-	string figure1 = "human_training/Real/Data/0.obj";
-	string figure2 = "human_training/Real/Data/1.obj";
+	string figure1 = "SHREC15/test/0.obj";
+	string figure2 = "SHREC15/test/1.obj";
 
 	//string figure1 = "bunny.off";
 	//string figure2 = "bunny_rotated.off";
 
-	igl::readOFF("../data/star.off", V, F);
-
 	igl::readOBJ("../data/" + figure1, V1, F1);
 	igl::readOBJ("../data/" + figure2, V2, F2);
 
-	std::cout << V1.rows() << std::endl;
 
 	VectorXi points1;
 	VectorXi points2;
@@ -582,16 +405,15 @@ int main(int argc, char *argv[])
 
 	VectorXi correspondances;
 
-	correspondances = mobius_voting(V1, F1, V2, F2, 1250000, 20, 0.1, 50, points1, points2, C);
+	correspondances = mobius_voting(V1, F1, V2, F2, 12000000, 100, 25, 0.3, points1, points2, C);
 
-	std::cout << points1 << std::endl;
-	std::cout << points2 << std::endl;
-	std::cout << C << std::endl;
-	std::cout << correspondances << std::endl;
+	//std::cout << points1 << std::endl;
+	//std::cout << points2 << std::endl;
+	//std::cout << C << std::endl;
+	//std::cout << correspondances << std::endl;
 
-	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
+	igl::opengl::glfw::Viewer viewer; 
 
-	viewer.callback_key_down = &key_down;
 
 	viewer.load_mesh_from_file("../data/star.off");
 	viewer.load_mesh_from_file("../data/star.off");
@@ -626,5 +448,5 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	viewer.launch(); // run the viewer
+	viewer.launch(); 
 }

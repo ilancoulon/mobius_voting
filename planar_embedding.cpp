@@ -248,16 +248,7 @@ VectorXd PlanarEmbedding::u_star(VectorXd u)
     rightMember(0) = 0;
 
 	
-	/*for (size_t i = 0; i < System.rows(); i++)
-	{
-		for (size_t j = 0; j < System.cols(); j++)
-		{
-			if (System(i, j) != 0.) {
-				tripletList.push_back(Eigen::Triplet<double>(i, j, System(i, j)));
-			}
 
-		}
-	}*/
 	sparseSystem.setFromTriplets(tripletList.begin(), tripletList.end());
 	Eigen::SparseLU<Eigen::SparseMatrix<double> > solver;
 	sparseSystem.makeCompressed();
@@ -296,8 +287,8 @@ void PlanarEmbedding::embedding(VectorXd u, VectorXd u_star)
 
     Fmid->row(0) = Fmid->row(1);
 
-    /*std::cout << *Vplain << std::endl;
-    std::cout << *Fmid << std::endl;*/
+    //std::cout << *Vplain << std::endl;
+    //std::cout << *Fmid << std::endl;
 }
 
 VectorXcd PlanarEmbedding::getComplexCoordinates() {
@@ -315,7 +306,6 @@ VectorXcd PlanarEmbedding::getComplexCoordinates() {
 
 MatrixXd PlanarEmbedding::getVertexCoordinates()
 {
-	//std::cout << "Vertices :" << *Vplain << std::endl;
 	return *Vplain;
 }
 
@@ -326,7 +316,6 @@ MatrixXi PlanarEmbedding::getFaces()
     {
         testF.row(i - 1) = Fmid->row(i);
     }
-    //std::cout << "Faces :" << testF << std::endl;
     return testF;
 }
 

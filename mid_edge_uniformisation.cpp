@@ -15,39 +15,34 @@ class MidEdge
 {
 
 public:
-    /** 
-	 * Initialize the data structures
-	 **/
+
+
     MidEdge(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh)
     {
         he = &mesh;
         V = &V_original;
-        F = &F_original;          
-        int e = he->sizeOfHalfedges() / 2; 
-        int n = V_original.rows();         
+        F = &F_original;    
 
-        nVertices = e;
+        nVertices = he->sizeOfHalfedges() / 2;
 		nFaces = F->rows();
 
 		V1 = new MatrixXd(nVertices, 3);
 		F1 = new MatrixXi(nFaces, 3);
-        halfpoints = new int[2*e];
+        halfpoints = new int[he->sizeOfHalfedges()];
     }
 
-    void subdivide()
+    void makeMidEdge()
     {
-        std::cout << "Performing one round subdivision" << endl;
-        int e = he->sizeOfHalfedges() / 2; // number of edges in the original mesh
-        int n = he->sizeOfVertices();      // number of vertices in the original mesh
-        int F = he->sizeOfFaces();         // number of vertices in the original mesh
+
+        int e = he->sizeOfHalfedges() / 2; 
+        int n = he->sizeOfVertices();     
+        int F = he->sizeOfFaces();       
 
 
         for (int i = 0; i < 2 * e; i++)
             halfpoints[i] = -1;
 
         int id_point = 0;
-
-        std::cout << e << std::endl;
 
         for (int i = 0; i < 2 * e; i++)
         {
@@ -71,17 +66,13 @@ public:
         }
     }
 
-    /** 
-	 * Return the number of half-edges
-	 **/
+ 
     MatrixXd getVertexCoordinates()
     {
         return *V1;
     }
 
-    /** 
-	 * Return the number of faces
-	 **/
+  
     MatrixXi getFaces()
     {
         return *F1;
@@ -93,9 +84,8 @@ public:
     }
 
 private:
-    /**
-	 * Compute the midpoint of the given half-edge 'h=(u,v)'
-	 */
+  
+  
     MatrixXd computeEdgePoint(int h)
     {
 
