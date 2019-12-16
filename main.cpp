@@ -398,6 +398,53 @@ string getExtensionFromFilename(string mesh_filename) {
 	return extension;
 }
 
+void displayMidEdgeUniformisation(string figure1) {
+	string extension1 = getExtensionFromFilename(rootPath + figure1);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure1, V1, F1);
+	}
+	else {
+		igl::readOFF(rootPath + figure1, V1, F1);
+	}
+
+
+	HalfedgeBuilder* builder1 = new HalfedgeBuilder();
+	HalfedgeDS he1 = (builder1->createMeshWithFaces(V1.rows(), F1));
+	MidEdge* midedge1 = new MidEdge(V1, F1, he1);
+	midedge1->makeMidEdge();
+
+	MatrixXd Vmid1;
+	MatrixXi Fmid1;
+	int* halfpoints1;
+
+	Vmid1 = midedge1->getVertexCoordinates();
+	Fmid1 = midedge1->getFaces();
+	halfpoints1 = midedge1->getHalfPoints();
+
+	igl::opengl::glfw::Viewer viewer;
+	viewer.load_mesh_from_file(rootPath + "star.off");
+	viewer.load_mesh_from_file(rootPath + "star.off");
+
+	unsigned int left_view, right_view;
+	int fig1_id = viewer.data_list[0].id;
+	int fig2_id = viewer.data_list[1].id;
+	viewer.data(fig1_id).clear();
+	viewer.data(fig2_id).clear();
+	viewer.data(fig1_id).set_mesh(V1, F1);
+	viewer.data(fig2_id).set_mesh(Vmid1, Fmid1);
+	viewer.callback_init = [&](igl::opengl::glfw::Viewer&) {
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
+		left_view = viewer.core_list[0].id;
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
+		viewer.core(left_view).align_camera_center(V1, F1);
+		viewer.core(right_view).align_camera_center(V2, F2);
+		viewer.data(fig1_id).set_visible(false, right_view);
+		viewer.data(fig2_id).set_visible(false, left_view);
+		return false;
+	};
+	viewer.launch();
+}
+
 void doPlanarEmbedding(string figure1) {
 	string extension1 = getExtensionFromFilename(rootPath + figure1);
 	if (extension1 == "obj") {
@@ -553,12 +600,12 @@ int main(int argc, char *argv[])
 
 	int toCall;
 
-	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Möbius Voting"  << std::endl;
+	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Mobius Voting, type 3 to see mid-edge uniformisation"  << std::endl;
 	std::cin >> toCall;
 	std::cin.clear();
 	std::cin.ignore(10, '\n');
 
-	if (toCall == 1) {
+	if (toCall == 3) {
 		string figure1;
 		string defaultFigure = "bunny.off";
 
@@ -566,7 +613,26 @@ int main(int argc, char *argv[])
 		{
 			std::cout << "Enter figure path... [" << defaultFigure << "] ";
 
-			
+			getline(std::cin, figure1);
+			if (figure1.empty()) {
+				figure1 = defaultFigure;
+			}
+
+			if (!igl::file_exists(rootPath + figure1)) {
+				std::cout << figure1 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath + figure1));
+
+		displayMidEdgeUniformisation(figure1);
+	}
+	else if (toCall == 1) {
+		string figure1;
+		string defaultFigure = "bunny.off";
+
+		do
+		{
+			std::cout << "Enter figure path... [" << defaultFigure << "] ";
+
 			getline(std::cin, figure1);
 			if (figure1.empty()) {
 				figure1 = defaultFigure;
