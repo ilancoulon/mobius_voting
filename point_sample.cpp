@@ -14,6 +14,11 @@ VectorXi point_sampling(MatrixXd V, MatrixXi F, int numberToSample) {
 
 }
 
+/*
+This functions computes all the local maxima and sample only 0.75xnumberToSample of them.
+It selects the maxima among the maxima to sample the points.
+A point i is considered as sampled if maxima(i)==1, not sampled if maxima(i)==0
+*/
 void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int numberToSample) {
 	// We use the half-edge data structure to easily get the neighbors
 	HalfedgeBuilder* builder = new HalfedgeBuilder();
@@ -68,6 +73,10 @@ void localMaxima(VectorXd &K, MatrixXd &V, MatrixXi &F, VectorXi &maxima, int nu
 	}
 }
 
+/*
+Using the FPS algorithm (always taking the point that is furthest from all the already sampled points),
+this function will sample numberToSample - (the number of already sampled points) new points
+*/
 void fpsSampling(MatrixXd& V, MatrixXi& F, VectorXi& sampled, int numberToSample) {
 	Eigen::VectorXi VS, FS, VT, FT;
 	int nSampled = 0;

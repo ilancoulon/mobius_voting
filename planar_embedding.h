@@ -10,6 +10,14 @@
 using namespace Eigen;
 using namespace std;
 
+
+/*
+This class computes the planar embedding
+You have to compute u, and u_star using the corresponding methods
+Then you use embedding() to put the results in Vplain
+You can then display the embedding using getVertexCoordinates() and getFaces()
+Or get the complex coordinates using getComplexCoordinates()
+*/
 class PlanarEmbedding
 {
 
