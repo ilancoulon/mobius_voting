@@ -48,6 +48,56 @@ void nearest_neighbour(const MatrixXd &V1, const MatrixXd &V2, VectorXi &nn){
 	}
 }
 
+void writeToCSVfile(string name, MatrixXd matrix)
+{
+	ofstream file(name.c_str());
+
+	for (int i = 0; i < matrix.rows(); i++)
+	{
+		for (int j = 0; j < matrix.cols(); j++)
+		{
+			string str = std::to_string(matrix(i, j));
+			if (j + 1 == matrix.cols())
+			{
+				file << str;
+			}
+			else
+			{
+				file << str << ',';
+			}
+		}
+		file << '\n';
+	}
+	file.close();
+}
+
+void readCSVfile(string name, MatrixXd matrix, int rows, int cols) {
+
+	std::ifstream indata;
+
+	matrix = MatrixXd::Zero(rows, cols);
+
+	indata.open(name);
+	int row = 0;
+	int col = 0;
+	std::vector<double> values;
+	std::string line;
+	while (getline(indata, line))
+	{
+		stringstream lineStream(line);
+		string cell;
+		col = 0;
+
+		while (std::getline(lineStream, cell, ','))
+		{
+			matrix(row, col) = stod(cell);
+			++col;
+		}
+		++row;
+	}
+
+}
+
 VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I, int numberToSample, int K, double confidenceLevel, VectorXi &points1, VectorXi &points2, MatrixXd &C)
 {
 
@@ -205,7 +255,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	///////////////////////////////////////////////
 
 	int nbSampled = sigma1.rows();
-	C = MatrixXd::Zero(nbSampled, nbSampled);
 
 	for (int iter = 0; iter < I; iter++)
 	{
@@ -325,6 +374,8 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 			}
 		}
 	}
+
+	writeToCSVfile("C.csv", C);
 
 	//std::cout << points1 << std::endl;
 	//std::cout << points2 << std::endl;
@@ -541,12 +592,13 @@ void doMobiusVoting(string figure1, string figure2) {
 
 	VectorXi points1;
 	VectorXi points2;
+	int numToSample = 100;
 
-	MatrixXd C;
+	MatrixXd C = MatrixXd::Zero(numToSample, numToSample);
 
 	VectorXi correspondances;
 
-	correspondances = mobius_voting(V1, F1, V2, F2, 12000, 20, 25, 0.3, points1, points2, C);
+	correspondances = mobius_voting(V1, F1, V2, F2, 12000, numToSample, 25, 0.3, points1, points2, C);
 
 	//std::cout << points1 << std::endl;
 	//std::cout << points2 << std::endl;
