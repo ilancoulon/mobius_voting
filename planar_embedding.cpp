@@ -59,23 +59,13 @@ VectorXd PlanarEmbedding::u()
         int v1 = he->getTarget(he->getOpposite(e1));
         int v2 = he->getTarget(he->getOpposite(e2));
 
-        //std::cout << v1 << std::endl;
-        //std::cout << v2 << std::endl;
-
         Vector3d vec1a = V->row(v1) - V->row(v0);
         Vector3d vec1b = V->row(v) - V->row(v0);
         Vector3d vec2a = V->row(v1) - V->row(v2);
         Vector3d vec2b = V->row(v) - V->row(v2);
 
-        //std::cout << vec0 << std::endl;
-        //std::cout << vec1 << std::endl;
-        //std::cout << vec2 << std::endl;
-
         double cota = cot(vec1a, vec1b);
         double cotb = cot(vec2a, vec2b);
-
-        //std::cout << cota << std::endl;
-        //std::cout << cotb << std::endl;
 
         System(v, v) = System(v, v) + cota + cotb;
         System(v, v1) = System(v, v1) - cota - cotb;
@@ -95,24 +85,13 @@ VectorXd PlanarEmbedding::u()
             v1 = he->getTarget(he->getOpposite(e1));
             v2 = he->getTarget(he->getOpposite(e2));
 
-            //std::cout << v0 << std::endl;
-            //std::cout << v1 << std::endl;
-            //std::cout << v2 << std::endl;
-
             vec1a = V->row(v1) - V->row(v0);
             vec1b = V->row(v) - V->row(v0);
             vec2a = V->row(v1) - V->row(v2);
             vec2b = V->row(v) - V->row(v2);
 
-            //std::cout << vec0 << std::endl;
-            //std::cout << vec1 << std::endl;
-            //std::cout << vec2 << std::endl;
-
             cota = cot(vec1a, vec1b);
             cotb = cot(vec2a, vec2b);
-
-            //std::cout << cota << std::endl;
-            //std::cout << cotb << std::endl;
 
             System(v, v) = System(v, v) + cota + cotb;
             System(v, v1) = System(v, v1) - cota - cotb;
@@ -277,8 +256,6 @@ void PlanarEmbedding::embedding(VectorXd u, VectorXd u_star)
             }
         }
 
-        //std::cout << v << std::endl;
-
         int v1 = he->getTarget(index);
         int v2 = he->getTarget(he->getOpposite(index));
 
@@ -286,9 +263,6 @@ void PlanarEmbedding::embedding(VectorXd u, VectorXd u_star)
     }
 
     Fmid->row(0) = Fmid->row(1);
-
-    //std::cout << *Vplain << std::endl;
-    //std::cout << *Fmid << std::endl;
 }
 
 VectorXcd PlanarEmbedding::getComplexCoordinates() {

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <ostream>
 #include <list>
-#include <nanoflann.ĥpp>
+#include <nanoflann.hpp>
 
 #include "point_sample.h"
 //#include "nanoflann/include/nanoflann.hpp"
@@ -25,7 +25,7 @@ MatrixXi F1;
 MatrixXd V2;
 MatrixXi F2;
 
-string rootPath = "../data/";
+string rootPath = "../../../data/";
 
 
 
@@ -71,7 +71,7 @@ void writeToCSVfile(string name, MatrixXd matrix)
 	file.close();
 }
 
-void readCSVfile(string name, MatrixXd matrix, int rows, int cols) {
+void readCSVfile(string name, MatrixXd &matrix, int rows, int cols) {
 
 	std::ifstream indata;
 
@@ -131,10 +131,10 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 
 	VectorXd u1;
 	VectorXd u_star1;
-	cout << " u..." << endl;
+	cout << " u...";
 
 	u1 = planar1->u();
-	cout << " u*..." << endl;
+	cout << " u*...";
 	u_star1 = planar1->u_star(u1);
 
 	planar1->embedding(u1, u_star1);
@@ -167,9 +167,9 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	VectorXd u2;
 	VectorXd u_star2;
 
-	cout << " u..." << endl;
+	cout << " u...";
 	u2 = planar2->u();
-	cout << " u*..." << endl;
+	cout << " u*...";
 	u_star2 = planar2->u_star(u2);
 
 	planar2->embedding(u2, u_star2);
@@ -195,13 +195,10 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 	////// MATCH THE SAMPLED POINTS IN THE PLANAR EMBEDDING /////////
 	/////////////////////////////////////////////////////////////////
 
-	cout << "Matching sample points in planar embedding..." << endl;
+	cout << "Matching sample points in planar embedding...";
 
 	int count1 = 0;
 	int count2 = 0;
-
-	//std::cout << sampled1.rows() << std::endl;
-	//std::cout << sampled2.rows() << std::endl;
 
 	int max = sampled2.rows();
 	if (sampled1.rows() > sampled2.rows()) max = sampled1.rows();
@@ -312,9 +309,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 			pts2(i,1) = complexPointsAfterMobius2(i).imag();
 		}
 
-		//std::cout << pts2;
-		//std::cout << complexPointsAfterMobius1;
-		
 
 		//FIND MUTUALLY CLOSEST NEIGHBORS AND FILL THEM IN "neigh1", "neigh2"
 
@@ -327,9 +321,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		nearest_neighbour(pts1,pts2,nn_1);
 		nearest_neighbour(pts2,pts1,nn_2);
 		
-		//std::cout << nn_1 << std::endl;
-		//std::cout << nn_2 << std::endl;
-
 		
 
 		//Add mutual nn to the lists
@@ -375,11 +366,9 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		}
 	}
 
+	// Saving the C matrix to csv file
 	writeToCSVfile("C.csv", C);
 
-	//std::cout << points1 << std::endl;
-	//std::cout << points2 << std::endl;
-	//std::cout << C << std::endl;
 
 	VectorXi correspondances = VectorXi::Zero(nbSampled);
 
@@ -400,7 +389,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		}
 	} 
 
-	//cout << realMax << endl;
 
 	while (foundCorrespondances < nbSampled)
 	{
@@ -420,11 +408,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 			}
 		}
 
-		//std::cout << C << std::endl;
-		//std::cout << maxFound << std::endl;
-		//std::cout << rowMax << std::endl;
-		//std::cout << colMax << std::endl;
-
 		for (size_t i = 0; i < C.rows(); i++)
 		{
 			C(i, colMax) = -1.;
@@ -433,8 +416,6 @@ VectorXi mobius_voting(MatrixXd V1, MatrixXi F1, MatrixXd V2, MatrixXi F2, int I
 		{
 			C(rowMax, j) = -1.;
 		}
-
-		//cout << maxFound << endl;
 
 		if ((maxFound != -1) && maxFound >= confidenceLevel * realMax)
 			correspondances[rowMax] = colMax;
@@ -475,6 +456,8 @@ void displayMidEdgeUniformisation(string figure1) {
 	halfpoints1 = midedge1->getHalfPoints();
 
 	igl::opengl::glfw::Viewer viewer;
+
+	// Hack to be able to see both figures
 	viewer.load_mesh_from_file(rootPath + "star.off");
 	viewer.load_mesh_from_file(rootPath + "star.off");
 
@@ -547,6 +530,8 @@ void doPlanarEmbedding(string figure1) {
 	}
 
 	igl::opengl::glfw::Viewer viewer;
+
+	// Hack to be able to see both figures
 	viewer.load_mesh_from_file(rootPath + "star.off");
 	viewer.load_mesh_from_file(rootPath + "star.off");
 
@@ -592,22 +577,21 @@ void doMobiusVoting(string figure1, string figure2) {
 
 	VectorXi points1;
 	VectorXi points2;
-	int numToSample = 100;
+	int numToSample = 80;
+
+	std::cout << "Number of points to sample: ";
+	std::cin >> numToSample;
 
 	MatrixXd C = MatrixXd::Zero(numToSample, numToSample);
+	//readCSVfile("C_centaure.csv", C, numToSample, numToSample);
 
 	VectorXi correspondances;
 
-	correspondances = mobius_voting(V1, F1, V2, F2, 12000, numToSample, 25, 0.3, points1, points2, C);
-
-	//std::cout << points1 << std::endl;
-	//std::cout << points2 << std::endl;
-	//std::cout << C << std::endl;
-	//std::cout << correspondances << std::endl;
+	correspondances = mobius_voting(V1, F1, V2, F2, 10*numToSample*numToSample*numToSample, numToSample, (int)(0.25*numToSample), 0.3, points1, points2, C);
 
 	igl::opengl::glfw::Viewer viewer; 
 
-
+	// Hack to be able to see both figures
 	viewer.load_mesh_from_file(rootPath+"star.off");
 	viewer.load_mesh_from_file(rootPath+"star.off");
 
@@ -619,9 +603,9 @@ void doMobiusVoting(string figure1, string figure2) {
 	viewer.data(fig1_id).set_mesh(V1,F1);
 	viewer.data(fig2_id).set_mesh(V2,F2);
 	viewer.callback_init = [&](igl::opengl::glfw::Viewer &) {
-		viewer.core().viewport = Eigen::Vector4f(0, 0, 1280, 1600);
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
 		left_view = viewer.core_list[0].id;
-		right_view = viewer.append_core(Eigen::Vector4f(1280, 0, 1280, 1600));
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
 		viewer.core(left_view).align_camera_center(V1, F1);
 		viewer.core(right_view).align_camera_center(V2, F2);
 		viewer.data(fig1_id).set_visible(false, right_view);
@@ -673,6 +657,7 @@ void displayGaussianCurvAndLocalMaxima(string figure1) {
 	igl::opengl::glfw::Viewer viewer;
 
 
+	// Hack to be able to see both figures
 	viewer.load_mesh_from_file(rootPath + "star.off");
 	viewer.load_mesh_from_file(rootPath + "star.off");
 
@@ -718,13 +703,8 @@ void displayLimitedLocalMaximaAndFpsSampling(string figure1) {
 
 
 	VectorXd K;
-	// Compute integral of Gaussian curvature 
 	igl::gaussian_curvature(V1, F1, K);
-	// Compute mass matrix 
-	// Divide by area to get integral average 
-	//K = (Minv * K).eval(); 
 
-	// Compute pseudocolor 
 	MatrixXd C;
 	igl::jet(K, true, C);
 
@@ -778,10 +758,7 @@ void displayLimitedLocalMaximaAndFpsSampling(string figure1) {
 
 int main(int argc, char *argv[])
 {
-	
-
-	//string figure1 = "bunny.off";
-	//string figure2 = "bunny_rotated.off";
+	// Let the user choose what to do
 
 	int toCall;
 
@@ -877,9 +854,9 @@ int main(int argc, char *argv[])
 	else  {
 
 		string figure1;
-		string defaultFigure1 = "SHREC15/test/0.obj";
+		string defaultFigure1 = "bunny.off";
 		string figure2;
-		string defaultFigure2 = "SHREC15/test/1.obj";
+		string defaultFigure2 = "bunny_rotated.off";
 
 		do
 		{
