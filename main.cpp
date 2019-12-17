@@ -6,6 +6,8 @@
 #include <igl/writeOBJ.h>
 #include <igl/file_exists.h>
 #include <igl/pathinfo.h>
+#include <igl/gaussian_curvature.h>
+#include <igl/massmatrix.h>
 #include <iostream>
 #include <ostream>
 #include <list>
@@ -591,6 +593,137 @@ void doMobiusVoting(string figure1, string figure2) {
 
 }
 
+void displayGaussianCurvAndLocalMaxima(string figure1) {
+	// Reading 1st file
+	string extension1 = getExtensionFromFilename(rootPath + figure1);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure1, V1, F1);
+	}
+	else {
+		igl::readOFF(rootPath + figure1, V1, F1);
+	}
+
+
+	VectorXd K;
+	// Compute integral of Gaussian curvature 
+	igl::gaussian_curvature(V1, F1, K);
+	// Compute mass matrix 
+	// Divide by area to get integral average 
+	//K = (Minv * K).eval(); 
+
+	// Compute pseudocolor 
+	MatrixXd C;
+	igl::jet(K, true, C);
+
+	VectorXi maxima;
+	localMaxima(K, V1, F1, maxima, 2000);
+
+	igl::opengl::glfw::Viewer viewer;
+
+
+	viewer.load_mesh_from_file(rootPath + "star.off");
+	viewer.load_mesh_from_file(rootPath + "star.off");
+
+	unsigned int left_view, right_view;
+	int fig1_id = viewer.data_list[0].id;
+	int fig2_id = viewer.data_list[1].id;
+	viewer.data(fig1_id).clear();
+	viewer.data(fig2_id).clear();
+	viewer.data(fig1_id).set_mesh(V1, F1);
+	viewer.data(fig1_id).set_colors(C);
+	viewer.data(fig2_id).set_mesh(V1, F1);
+	viewer.callback_init = [&](igl::opengl::glfw::Viewer&) {
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
+		left_view = viewer.core_list[0].id;
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
+		viewer.core(left_view).align_camera_center(V1, F1);
+		viewer.core(right_view).align_camera_center(V2, F2);
+		viewer.data(fig1_id).set_visible(false, right_view);
+		viewer.data(fig2_id).set_visible(false, left_view);
+		return false;
+	};
+
+	for (size_t i = 0; i < maxima.rows(); i++)
+	{
+		if (maxima(i) == 1) {
+			viewer.data(fig2_id).add_points(V1.row(i), Eigen::RowVector3d(1,0,0));
+		}
+	}
+
+	viewer.launch();
+
+}
+
+void displayLimitedLocalMaximaAndFpsSampling(string figure1) {
+	// Reading 1st file
+	string extension1 = getExtensionFromFilename(rootPath + figure1);
+	if (extension1 == "obj") {
+		igl::readOBJ(rootPath + figure1, V1, F1);
+	}
+	else {
+		igl::readOFF(rootPath + figure1, V1, F1);
+	}
+
+
+	VectorXd K;
+	// Compute integral of Gaussian curvature 
+	igl::gaussian_curvature(V1, F1, K);
+	// Compute mass matrix 
+	// Divide by area to get integral average 
+	//K = (Minv * K).eval(); 
+
+	// Compute pseudocolor 
+	MatrixXd C;
+	igl::jet(K, true, C);
+
+	VectorXi maxima;
+	localMaxima(K, V1, F1, maxima, 100);
+
+	igl::opengl::glfw::Viewer viewer;
+
+
+	viewer.load_mesh_from_file(rootPath + "star.off");
+	viewer.load_mesh_from_file(rootPath + "star.off");
+
+	unsigned int left_view, right_view;
+	int fig1_id = viewer.data_list[0].id;
+	int fig2_id = viewer.data_list[1].id;
+	viewer.data(fig1_id).clear();
+	viewer.data(fig2_id).clear();
+	viewer.data(fig1_id).set_mesh(V1, F1);
+	viewer.data(fig2_id).set_mesh(V1, F1);
+	viewer.callback_init = [&](igl::opengl::glfw::Viewer&) {
+		viewer.core().viewport = Eigen::Vector4f(0, 0, 640, 800);
+		left_view = viewer.core_list[0].id;
+		right_view = viewer.append_core(Eigen::Vector4f(640, 0, 640, 800));
+		viewer.core(left_view).align_camera_center(V1, F1);
+		viewer.core(right_view).align_camera_center(V2, F2);
+		viewer.data(fig1_id).set_visible(false, right_view);
+		viewer.data(fig2_id).set_visible(false, left_view);
+		return false;
+	};
+
+	for (size_t i = 0; i < maxima.rows(); i++)
+	{
+		if (maxima(i) == 1) {
+			viewer.data(fig1_id).add_points(V1.row(i), Eigen::RowVector3d(1, 0, 0));
+		}
+	}
+
+	fpsSampling(V1, F1, maxima, 100);
+	for (size_t i = 0; i < maxima.rows(); i++)
+	{
+		if (maxima(i) == 1) {
+			viewer.data(fig2_id).add_points(V1.row(i), Eigen::RowVector3d(1, 0, 0));
+		}
+	}
+
+	viewer.launch();
+
+}
+
+
+
 int main(int argc, char *argv[])
 {
 	
@@ -600,7 +733,8 @@ int main(int argc, char *argv[])
 
 	int toCall;
 
-	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Mobius Voting, type 3 to see mid-edge uniformisation"  << std::endl;
+	std::cout << "Please type 1 to try Planar Embedding, type 2 to try Mobius Voting, type 3 to see mid-edge uniformisation, type 4 for GaussianCurvAndLocalMaxima";
+	std::cout << ", type 5 to displayLimitedLocalMaximaAndFpsSampling" << std::endl;
 	std::cin >> toCall;
 	std::cin.clear();
 	std::cin.ignore(10, '\n');
@@ -644,6 +778,48 @@ int main(int argc, char *argv[])
 		} while (!igl::file_exists(rootPath + figure1));
 
 		doPlanarEmbedding(figure1);
+
+	}
+	else if (toCall == 5) {
+		string figure1;
+		string defaultFigure = "bunny.off";
+
+		do
+		{
+			std::cout << "Enter figure path... [" << defaultFigure << "] ";
+
+			getline(std::cin, figure1);
+			if (figure1.empty()) {
+				figure1 = defaultFigure;
+			}
+
+			if (!igl::file_exists(rootPath + figure1)) {
+				std::cout << figure1 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath + figure1));
+
+		displayLimitedLocalMaximaAndFpsSampling(figure1);
+
+	}
+	else if (toCall == 4) {
+		string figure1;
+		string defaultFigure = "bunny.off";
+
+		do
+		{
+			std::cout << "Enter figure path... [" << defaultFigure << "] ";
+
+			getline(std::cin, figure1);
+			if (figure1.empty()) {
+				figure1 = defaultFigure;
+			}
+
+			if (!igl::file_exists(rootPath + figure1)) {
+				std::cout << figure1 << " does not exist!" << std::endl;
+			}
+		} while (!igl::file_exists(rootPath + figure1));
+
+		displayGaussianCurvAndLocalMaxima(figure1);
 
 	}
 	else  {
